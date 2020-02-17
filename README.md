@@ -1,6 +1,6 @@
 Snapdragon
 =============
-A controller that makes a GuiObject draggable
+A controller that makes draggable GuiObjects with snapping capabilities.
 
 
 API
