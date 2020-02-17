@@ -9,7 +9,12 @@ declare interface SnapProps {
 }
 
 declare interface DraggingOptions {
-	readonly stub?: never;
+	/**
+	 * Overrides which object when dragged, will drag this object.
+	 * 
+	 * Useful for things like titlebars
+	 */
+	dragGui?: GuiObject;
 }
 
 declare interface DraggingSnapOptions {
@@ -47,7 +52,6 @@ declare interface SnapdragonController {
  */
 declare function createDragController(
 	gui: GuiObject,
-	dragGui?: GuiObject,
 	dragOptions?: DraggingOptions,
 	dragSnapOptions?: DraggingSnapOptions,
 ): SnapdragonController;

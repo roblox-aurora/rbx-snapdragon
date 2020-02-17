@@ -1,12 +1,21 @@
 {
-  "name": "@rbxts/snapdragon",
-  "version": "1.0.0",
-  "description": "A library that allows UI to be draggable in/and snappable to the viewport",
-  "main": "src/init.lua",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@rbxts/types": "^1.0.336"
-  }
+	"name": "@rbxts/snapdragon",
+	"version": "1.0.1",
+	"description": "A library that allows UI to be draggable in/and snappable to the viewport",
+	"main": "src/init.lua",
+	"keywords": [],
+	"private": false,
+	"author": "vorlias",
+	"license": "MIT",
+	"devDependencies": {
+		"@rbxts/types": "^1.0.336"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/roblox-aurora/rbx-snapdragon.git"
+	},
+	"bugs": {
+		"url": "https://github.com/roblox-aurora/rbx-snapdragon/issues"
+	},
+	"homepage": "https://github.com/roblox-aurora/rbx-snapdragon#readme"
 }

@@ -10,13 +10,17 @@ local function objectAssign(target, ...)
 	return target
 end
 
-local function createDragController(gui, dragGui, dragOptions, snapOptions)
-	dragOptions = objectAssign({}, dragOptions)
+local function createDragController(gui, dragOptions, snapOptions)
+	dragOptions = objectAssign({
+		dragGui = nil
+	}, dragOptions)
 	snapOptions = objectAssign({
 		snapMargin = {},
 		snapMarginThreshold = {},
 		snapEnabled = false
 	}, snapOptions)
+
+	local dragGui = dragOptions.dragGui
 
 	local snapMargin = snapOptions.snapMargin
 	local snapVerticalMargin = snapMargin.Vertical or Vector2.new()

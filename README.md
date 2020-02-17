@@ -19,6 +19,15 @@ namespace Snapdragon {
     SnapThresholdMargin?: SnapMargin;
   }
 
+  interface DraggingOptions {
+	/**
+	 * Overrides which object when dragged, will drag this object.
+	 * 
+	 * Useful for things like titlebars
+	 */
+    dragGui?: GuiObject;
+  }
+
   interface DraggingSnapOptions {
     /**
      * The margin to the edges of the parent container
@@ -45,13 +54,11 @@ namespace Snapdragon {
  /**
  *
  * @param gui The gui that ends up being dragged
- * @param dragGui The draggable Gui (defaults to `gui`)
  * @param dragOptions Options relating to the dragging
  * @param dragSnapOptions Options relating to the snapping behaviour
  */
   export function createDragController(
 	  gui: GuiObject,
-	  dragGui?: GuiObject,
 	  dragOptions?: DraggingOptions,
 	  dragSnapOptions?: DraggingSnapOptions,
   ): SnapdragonController;
