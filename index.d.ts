@@ -94,4 +94,4 @@ declare function createDragController(
 ): SnapdragonController;
 
 export as namespace Snapdragon;
-export {createDragController, SnapProps, SnapMargin, DraggingOptions, DraggingSnapOptions};
+export {createDragController, SnapProps, SnapMargin, DraggingOptions, DraggingSnapOptions, SnapdragonController};
