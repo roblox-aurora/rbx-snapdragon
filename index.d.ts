@@ -40,8 +40,45 @@ declare interface DraggingSnapOptions {
 	snapEnabled?: boolean;
 }
 
+declare interface Signal<ConnectedFunctionSignature = () => void, Generic = false> {
+	/**
+	 * Connects a callback to BindableEvent.Event
+	 * @param callback The function to connect to BindableEvent.Event
+	 */
+	Connect<O extends Array<unknown> = FunctionArguments<ConnectedFunctionSignature>>(
+		callback: Generic extends true
+			? (FunctionArguments<ConnectedFunctionSignature> extends Array<unknown>
+					? (...args: O) => void
+					: ConnectedFunctionSignature)
+			: ConnectedFunctionSignature,
+	): RBXScriptConnection;
+
+	/**
+	 * Yields the current thread until the thread is fired.
+	 */
+	Wait(): LuaTuple<FunctionArguments<ConnectedFunctionSignature>>;
+}
+
 declare interface SnapdragonController {
-	Disconnect(): void
+	/**
+	 * Disconnects the drag listeners
+	 */
+	Disconnect(): void;
+
+	/**
+	 * Resets the position of the attached gui to the start position
+	 */
+	ResetPosition(): void;
+
+	/**
+	 * Event called when the dragging stops
+	 */
+	DragFinished: Signal<(position: Vector3) => void>;
+
+	/**
+	 * Event called when the dragging begins
+	 */
+	DragBegan: Signal<(position: Vector3) => void>;
 }
 
 /**

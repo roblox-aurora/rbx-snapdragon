@@ -1,4 +1,5 @@
 local UserInputService = game:GetService("UserInputService")
+local Signal = require(script.Signal)
 
 local function objectAssign(target, ...)
 	local targets = {...}
@@ -12,7 +13,7 @@ end
 
 local function createDragController(gui, dragOptions, snapOptions)
 	dragOptions = objectAssign({
-		dragGui = nil
+		dragGui = gui
 	}, dragOptions)
 	snapOptions = objectAssign({
 		snapMargin = {},
@@ -40,6 +41,11 @@ local function createDragController(gui, dragOptions, snapOptions)
 	local dragInput
 	local dragStart
 	local startPos
+
+	local originPosition = dragGui.Position
+
+	local DragEnded = Signal.new()
+	local DragBegan = Signal.new()
 
 	local function update(input)
 		local view = workspace.CurrentCamera.ViewportSize
@@ -89,11 +95,13 @@ local function createDragController(gui, dragOptions, snapOptions)
 				dragging = true
 				dragStart = input.Position
 				startPos = (dragGui or gui).Position
+				DragBegan:Fire(dragStart)
 
 				input.Changed:Connect(
 					function()
 						if input.UserInputState == Enum.UserInputState.End then
 							dragging = false
+							DragEnded:Fire(input.Position)
 						end
 					end
 				)
@@ -117,12 +125,26 @@ local function createDragController(gui, dragOptions, snapOptions)
 		end
 	)
 
+	local connected = true
+	local function disconnect()
+		connected = false
+		guiInputBegan:Disconnect()
+		guiInputChanged:Disconnect()
+		uisInputChanged:Disconnect()
+		DragEnded:Destroy()
+		DragBegan:Destroy()
+	end
+
 	return {
-		Disconnect = function()
-			guiInputBegan:Disconnect()
-			guiInputChanged:Disconnect()
-			uisInputChanged:Disconnect()
-		end
+		Disconnect = disconnect,
+		ResetPosition = function()
+			if not connected then
+				error("Cannot reset position of disconnected controller", 2)
+			end
+			dragGui.Position = originPosition
+		end,
+		DragEnded = DragEnded,
+		DragBegan = DragBegan,
 	}
 end
 
