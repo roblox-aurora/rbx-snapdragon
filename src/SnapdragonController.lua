@@ -186,6 +186,7 @@ function SnapdragonController:Connect()
 	else
 		error("[SnapdragonController] Another controller is already bound to this instance, call Unbind first.", 2)
 	end
+	return self
 end
 
 function SnapdragonController:Disconnect()

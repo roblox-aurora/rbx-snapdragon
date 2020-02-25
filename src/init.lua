@@ -12,7 +12,7 @@ local function objectAssign(target, ...)
 	return target
 end
 
-local function createDragController(gui, dragOptions, snapOptions)
+local function LEGACY_createDragController(gui, dragOptions, snapOptions)
 	dragOptions = objectAssign({
 		dragGui = gui
 	}, dragOptions)
@@ -149,4 +149,8 @@ local function createDragController(gui, dragOptions, snapOptions)
 	}
 end
 
-return {createDragController = createDragController, SnapdragonController = SnapdragonController}
+local function createDragController(...)
+	return SnapdragonController.new(...)
+end
+
+return {createDragController = createDragController, LEGACY_createDragController = LEGACY_createDragController, SnapdragonController = SnapdragonController}

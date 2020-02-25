@@ -153,11 +153,24 @@ declare function createDragController(
 	gui: GuiObject,
 	dragOptions?: DraggingOptions,
 	dragSnapOptions?: DraggingSnapOptions,
+): SnapdragonController;
+
+/**
+ *
+ * @param gui The gui that ends up being dragged
+ * @param dragGui The draggable Gui (defaults to `gui`)
+ * @param dragSnapOptions The snap options
+ */
+declare function LEGACY_createDragController(
+	gui: GuiObject,
+	dragOptions?: DraggingOptions,
+	dragSnapOptions?: DraggingSnapOptions,
 ): LegacySnapdragonController;
 
 export as namespace Snapdragon;
 export {
 	createDragController,
+	LEGACY_createDragController,
 	SnapProps,
 	SnapMargin,
 	DraggingOptions,
