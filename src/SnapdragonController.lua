@@ -215,3 +215,5 @@ function SnapdragonController:Destroy()
 	self.DragBegan = nil
 	self.locked = true
 end
+
+return SnapdragonController
