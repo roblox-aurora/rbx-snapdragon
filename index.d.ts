@@ -11,7 +11,7 @@ declare interface SnapProps {
 declare interface DraggingOptions {
 	/**
 	 * Overrides which object when dragged, will drag this object.
-	 * 
+	 *
 	 * Useful for things like titlebars
 	 */
 	dragGui?: GuiObject;
@@ -25,31 +25,38 @@ declare interface DraggingSnapOptions {
 
 	/**
 	 * The threshold margin for snapping to edges.
-	 * 
+	 *
 	 * It's additive to the snapMargin, so a margin of 20 + a snap threshold of 20 = total snapThreshold of 40.
-	 * 
+	 *
 	 * That means if the dragged object comes within 40 pixels, it will snap to the edge.
 	 */
 	snapThreshold?: SnapMargin;
 
 	/**
 	 * Whether or not the snapping behaviour is enabled
-	 * 
+	 *
 	 * (true by default)
 	 */
 	snapEnabled?: boolean;
 }
 
-declare interface Signal<ConnectedFunctionSignature = () => void, Generic = false> {
+declare interface Signal<
+	ConnectedFunctionSignature = () => void,
+	Generic = false
+> {
 	/**
 	 * Connects a callback to BindableEvent.Event
 	 * @param callback The function to connect to BindableEvent.Event
 	 */
-	Connect<O extends Array<unknown> = FunctionArguments<ConnectedFunctionSignature>>(
+	Connect<
+		O extends Array<unknown> = FunctionArguments<ConnectedFunctionSignature>
+	>(
 		callback: Generic extends true
-			? (FunctionArguments<ConnectedFunctionSignature> extends Array<unknown>
-					? (...args: O) => void
-					: ConnectedFunctionSignature)
+			? FunctionArguments<ConnectedFunctionSignature> extends Array<
+					unknown
+			  >
+				? (...args: O) => void
+				: ConnectedFunctionSignature
 			: ConnectedFunctionSignature,
 	): RBXScriptConnection;
 
@@ -59,9 +66,11 @@ declare interface Signal<ConnectedFunctionSignature = () => void, Generic = fals
 	Wait(): LuaTuple<FunctionArguments<ConnectedFunctionSignature>>;
 }
 
-declare interface SnapdragonController {
+declare interface LegacySnapdragonController {
 	/**
-	 * Disconnects the drag listeners
+	 * Stops this drag controller from listening for drag events.
+	 * 
+	 * Call `Destroy` to clean up this controller & all attached events such as `DragBegan`, `DragEnded`
 	 */
 	Disconnect(): void;
 
@@ -73,13 +82,66 @@ declare interface SnapdragonController {
 	/**
 	 * Event called when the dragging stops
 	 */
-	DragFinished: Signal<(position: Vector3) => void>;
+	DragEnded: Signal<(position: Vector3) => void>;
 
 	/**
 	 * Event called when the dragging begins
 	 */
 	DragBegan: Signal<(position: Vector3) => void>;
 }
+
+declare interface SnapdragonController extends LegacySnapdragonController {
+	/**
+	 * Connects this controller to the gui
+	 */
+	Connect(): void;
+
+	/**
+	 * Sets the snap margin
+	 * @param snapMargin The snap margin
+	 */
+	SetSnapMargin(snapMargin: SnapMargin): void;
+
+	/**
+	 * Sets the snapping enabled
+	 * @param snapEnabled Whether or not the snapping is enabled
+	 */
+	SetSnapEnabled(snapEnabled: boolean): void;
+
+	/**
+	 * Set the snap threshold
+	 * @param snapThreshold The snap theshold
+	 */
+	SetSnapThreshold(snapThreshold: SnapMargin): void;
+
+	/**
+	 * Fully cleans up this controller & locks it from further use.
+	 * 
+	 * Actions:
+	 * - Calls `Disconnect` on this controller
+	 * - Disconnects all `DragBegan` and `DragEnded` events.
+	 * - Locks the controller from being used again
+	 */
+	Destroy(): void;
+}
+
+declare interface SnapdragonConstructor {
+	/**
+	 * Create a new snapdragon controller object
+	 * @param gui The gui that ends up being dragged
+	 * @param dragGui The draggable Gui (defaults to `gui`)
+	 * @param dragSnapOptions The snap options
+	 */
+	new (
+		gui: GuiObject,
+		dragOptions?: DraggingOptions,
+		dragSnapOptions?: DraggingSnapOptions,
+	): SnapdragonController;
+
+	get(instance: GuiObject): SnapdragonController | undefined;
+}
+
+declare const SnapdragonController: SnapdragonConstructor;
 
 /**
  *
@@ -91,7 +153,15 @@ declare function createDragController(
 	gui: GuiObject,
 	dragOptions?: DraggingOptions,
 	dragSnapOptions?: DraggingSnapOptions,
-): SnapdragonController;
+): LegacySnapdragonController;
 
 export as namespace Snapdragon;
-export {createDragController, SnapProps, SnapMargin, DraggingOptions, DraggingSnapOptions, SnapdragonController};
+export {
+	createDragController,
+	SnapProps,
+	SnapMargin,
+	DraggingOptions,
+	DraggingSnapOptions,
+	SnapdragonController,
+	LegacySnapdragonController
+};
