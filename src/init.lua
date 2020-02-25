@@ -1,5 +1,6 @@
 local UserInputService = game:GetService("UserInputService")
 local Signal = require(script.Signal)
+local SnapdragonController = require(script.SnapdragonController)
 
 local function objectAssign(target, ...)
 	local targets = {...}
@@ -148,4 +149,4 @@ local function createDragController(gui, dragOptions, snapOptions)
 	}
 end
 
-return {createDragController = createDragController}
+return {createDragController = createDragController, SnapdragonController = SnapdragonController}
