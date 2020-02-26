@@ -6,9 +6,22 @@ local SnapdragonRef = require(script.Parent.SnapdragonRef)
 local t = require(script.Parent.t)
 local Maid = require(script.Parent.Maid)
 
-local isMarginProp = t.interface({
+local MarginTypeCheck = t.interface({
 	Vertical = t.optional(t.Vector2),
 	Horizontal = t.optional(t.Vector2),
+})
+
+local DragAxisEnumCheck = t.literal("XY", "X", "Y")
+local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
+
+local OptionsInterfaceCheck = t.interface({
+	DragGui = t.instanceIsA("Frame"),
+	DragThreshold = t.number,
+	SnapMargin = MarginTypeCheck,
+	SnapMarginThreshold = MarginTypeCheck,
+	DragAxis = DragAxisEnumCheck,
+	DragRelativeTo = DragRelativeToEnumCheck,
+	SnapEnabled = t.boolean,
 })
 
 local SnapdragonController = {}
@@ -22,8 +35,12 @@ function SnapdragonController.new(gui, options)
 		DragThreshold = 0,
 		SnapMargin = {},
 		SnapMarginThreshold = {},
-		SnapEnabled = true
+		SnapEnabled = true,
+		DragAxis = "XY",
+		DragRelativeTo = "LayerCollector",
 	}, options)
+
+	assert(OptionsInterfaceCheck(options))
 
 	local self = setmetatable({}, SnapdragonController)
 	-- Basic immutable values
@@ -33,6 +50,8 @@ function SnapdragonController.new(gui, options)
 	self.originPosition = dragGui.Position
 	self.snapEnabled = options.SnapEnabled
 	self.dragThreshold = options.DragThreshold
+	self.dragAxis = options.DragAxis
+	self.dragRelativeTo = options.DragRelativeTo
 
 	-- Events
 	local DragEnded = Signal.new()
@@ -55,7 +74,7 @@ function SnapdragonController:SetSnapEnabled(snapEnabled)
 end
 
 function SnapdragonController:SetSnapMargin(snapMargin)
-	assert(isMarginProp(snapMargin))
+	assert(MarginTypeCheck(snapMargin))
 	local snapVerticalMargin = snapMargin.Vertical or Vector2.new()
 	local snapHorizontalMargin = snapMargin.Horizontal or Vector2.new()
 	self.snapVerticalMargin = snapVerticalMargin
@@ -63,7 +82,7 @@ function SnapdragonController:SetSnapMargin(snapMargin)
 end
 
 function SnapdragonController:SetSnapThreshold(snapThreshold)
-	assert(isMarginProp(snapThreshold))
+	assert(MarginTypeCheck(snapThreshold))
 	local snapThresholdVertical = snapThreshold.Vertical or Vector2.new()
 	local snapThresholdHorizontal = snapThreshold.Horizontal or Vector2.new()
 	self.snapThresholdVertical = snapThresholdVertical
@@ -100,6 +119,8 @@ function SnapdragonController:__bindControllerBehaviour()
 	local snap = self.snapEnabled
 	local DragEnded = self.DragEnded
 	local DragBegan = self.DragBegan
+	local dragAxis = self.dragAxis
+	local dragRelativeTo = self.dragRelativeTo
 
 	local dragging
 	local dragInput
@@ -112,38 +133,53 @@ function SnapdragonController:__bindControllerBehaviour()
 		local snapThresholdVertical = self.snapThresholdVertical
 		local snapThresholdHorizontal = self.snapThresholdHorizontal
 
-		local view = workspace.CurrentCamera.ViewportSize
-		local screen = view
+		local screenSize = workspace.CurrentCamera.ViewportSize
+		local inset = game:GetService("GuiService"):GetGuiInset()
+		
 
 		local delta = input.Position - dragStart
 
 		gui = dragGui or gui
 
-		local host = gui:FindFirstAncestorOfClass("ScreenGui")
+		local host = gui:FindFirstAncestorOfClass("LayerCollector")
 		local topLeft = Vector2.new()
-		if host and not host.IgnoreGuiInset then
-			topLeft = game:GetService("GuiService"):GetGuiInset()
+		if host and dragRelativeTo == "LayerCollector" then
+			if host:IsA("ScreenGui") and not host.IgnoreGuiInset then
+				topLeft = inset
+			end
+			screenSize = host.AbsoluteSize
+		elseif dragRelativeTo == "Parent" then
+			assert(gui.Parent:IsA("GuiObject"), "DragRelativeTo is set to Parent, but the parent is not a GuiObject!")
+
+			screenSize = gui.Parent.AbsoluteSize
+			topLeft = gui.Parent.AbsolutePosition
+			if host:IsA("ScreenGui") and host.IgnoreGuiInset then
+				topLeft = topLeft + inset
+			end
 		end
 
 		if snap then
-			local scaleOffsetX = screen.X * startPos.X.Scale
-			local scaleOffsetY = screen.Y * startPos.Y.Scale
+			local scaleOffsetX = screenSize.X * startPos.X.Scale
+			local scaleOffsetY = screenSize.Y * startPos.Y.Scale
 			local resultingOffsetX = startPos.X.Offset + delta.X
 			local resultingOffsetY = startPos.Y.Offset + delta.Y
 			local absSize = gui.AbsoluteSize + Vector2.new(snapHorizontalMargin.Y, snapVerticalMargin.Y + topLeft.Y)
 
 
-			-- proximity based snap would  affect the checks, but not the results
-			if (resultingOffsetX + scaleOffsetX) > screen.X - absSize.X - snapThresholdHorizontal.Y then
-				resultingOffsetX = screen.X - absSize.X - scaleOffsetX
-			elseif (resultingOffsetX + scaleOffsetX) < snapHorizontalMargin.X + snapThresholdHorizontal.X then
-				resultingOffsetX = -scaleOffsetX + (snapHorizontalMargin.X)
+			if dragAxis == "XY" or dragAxis == "X" then
+				if (resultingOffsetX + scaleOffsetX) > screenSize.X - absSize.X - snapThresholdHorizontal.Y then
+					resultingOffsetX = screenSize.X - absSize.X - scaleOffsetX
+				elseif (resultingOffsetX + scaleOffsetX) < snapHorizontalMargin.X + snapThresholdHorizontal.X then
+					resultingOffsetX = -scaleOffsetX + (snapHorizontalMargin.X)
+				end
 			end
 
-			if (resultingOffsetY + scaleOffsetY) > screen.Y - absSize.Y - snapThresholdVertical.Y then
-				resultingOffsetY = screen.Y - absSize.Y - scaleOffsetY
-			elseif (resultingOffsetY + scaleOffsetY) < snapVerticalMargin.X + snapThresholdVertical.X then
-				resultingOffsetY = -scaleOffsetY + (snapVerticalMargin.X)
+			if dragAxis == "XY" or dragAxis == "Y" then
+				if (resultingOffsetY + scaleOffsetY) > screenSize.Y - absSize.Y - snapThresholdVertical.Y then
+					resultingOffsetY = screenSize.Y - absSize.Y - scaleOffsetY
+				elseif (resultingOffsetY + scaleOffsetY) < snapVerticalMargin.X + snapThresholdVertical.X then
+					resultingOffsetY = -scaleOffsetY + (snapVerticalMargin.X)
+				end
 			end
 
 			gui.Position = UDim2.new(startPos.X.Scale, resultingOffsetX, startPos.Y.Scale, resultingOffsetY)

@@ -30,8 +30,20 @@ declare interface DraggingOptions {
 	 * The amount of pixels the mouse must be held down before the dragging happens
 	 * 
 	 * Note: The bigger the threshold, the more "snappy" the initial drag may feel.
+	 * 
+	 * @todo
 	 */
 	DragThreshold?: number;
+
+	/**
+	 * @todo
+	 */
+	DragAxis?: "XY" | "X" | "Y";
+
+	/**
+	 * @todo
+	 */
+	DragRelativeTo?: "LayerCollector" | "Parent";
 }
 
 declare interface DraggingSnapOptions {
