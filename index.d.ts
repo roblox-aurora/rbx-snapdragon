@@ -149,7 +149,7 @@ declare interface SnapdragonConstructor {
 	 * @param dragSnapOptions The snap options
 	 */
 	new (
-		gui: GuiObject,
+		gui: GuiObject | SnapdragonRef,
 		dragOptions?: DraggingOptions,
 		dragSnapOptions?: DraggingSnapOptions,
 	): SnapdragonController;
@@ -175,7 +175,7 @@ declare function createRef(gui?: GuiObject): SnapdragonRef;
  * @param dragSnapOptions The snap options
  */
 declare function createDragController(
-	gui: GuiObject,
+	gui: GuiObject | SnapdragonRef,
 	dragOptions?: DraggingOptions,
 	dragSnapOptions?: DraggingSnapOptions,
 ): SnapdragonController;
