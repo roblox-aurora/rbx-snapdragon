@@ -25,6 +25,13 @@ declare interface DraggingOptions {
 	 * Useful for things like titlebars
 	 */
 	DragGui?: GuiObject | SnapdragonRef;
+
+	/**
+	 * The amount of pixels the mouse must be held down before the dragging happens
+	 * 
+	 * Note: The bigger the threshold, the more "snappy" the initial drag may feel.
+	 */
+	DragThreshold?: number;
 }
 
 declare interface DraggingSnapOptions {
@@ -48,6 +55,10 @@ declare interface DraggingSnapOptions {
 	 * (true by default)
 	 */
 	SnapEnabled?: boolean;
+}
+
+declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {
+
 }
 
 declare interface Signal<
@@ -76,7 +87,7 @@ declare interface Signal<
 	Wait(): LuaTuple<FunctionArguments<ConnectedFunctionSignature>>;
 }
 
-declare interface LegacySnapdragonController {
+declare interface SnapdragonController {
 	/**
 	 * Stops this drag controller from listening for drag events.
 	 * 
@@ -98,9 +109,7 @@ declare interface LegacySnapdragonController {
 	 * Event called when the dragging begins
 	 */
 	DragBegan: Signal<(position: Vector3) => void>;
-}
 
-declare interface SnapdragonController extends LegacySnapdragonController {
 	/**
 	 * Connects this controller to the gui
 	 */
@@ -117,6 +126,15 @@ declare interface SnapdragonController extends LegacySnapdragonController {
 	 * @param snapEnabled Whether or not the snapping is enabled
 	 */
 	SetSnapEnabled(snapEnabled: boolean): void;
+
+	/**
+	 * The amount of pixels the mouse must be held down before the dragging happens
+	 * 
+	 * Note: The bigger the threshold, the more "snappy" the initial drag may feel.
+	 * 
+	 * @param dragThreshold The drag threshold
+	 */
+	SetDragThreshold(dragThreshold: number): void;
 
 	/**
 	 * Set the snap threshold
@@ -150,8 +168,7 @@ declare interface SnapdragonConstructor {
 	 */
 	new (
 		gui: GuiObject | SnapdragonRef,
-		dragOptions?: DraggingOptions,
-		dragSnapOptions?: DraggingSnapOptions,
+		options?: SnapdragonOptions,
 	): SnapdragonController;
 }
 
@@ -174,31 +191,15 @@ declare function createRef(gui?: GuiObject): SnapdragonRef;
  */
 declare function createDragController(
 	gui: GuiObject | SnapdragonRef,
-	dragOptions?: DraggingOptions,
-	dragSnapOptions?: DraggingSnapOptions,
+	options?: SnapdragonOptions,
 ): SnapdragonController;
-
-/**
- *
- * @param gui The gui that ends up being dragged
- * @param dragGui The draggable Gui (defaults to `gui`)
- * @param dragSnapOptions The snap options
- */
-declare function LEGACY_createDragController(
-	gui: GuiObject,
-	dragOptions?: DraggingOptions,
-	dragSnapOptions?: DraggingSnapOptions,
-): LegacySnapdragonController;
 
 export as namespace Snapdragon;
 export {
 	createDragController,
-	LEGACY_createDragController,
 	SnapProps,
 	SnapMargin,
-	DraggingOptions,
-	DraggingSnapOptions,
+	SnapdragonOptions,
 	SnapdragonController,
-	LegacySnapdragonController,
 	createRef,
 };

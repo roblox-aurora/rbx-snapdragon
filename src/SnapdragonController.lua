@@ -16,23 +16,23 @@ SnapdragonController.__index = SnapdragonController
 
 local controllers = setmetatable({}, {__mode = "k"})
 
-function SnapdragonController.new(gui, dragOptions, snapOptions)
-	dragOptions = objectAssign({
-		DragGui = gui
-	}, dragOptions)
-	snapOptions = objectAssign({
+function SnapdragonController.new(gui, options)
+	options = objectAssign({
+		DragGui = gui,
+		DragThreshold = 0,
 		SnapMargin = {},
 		SnapMarginThreshold = {},
 		SnapEnabled = true
-	}, snapOptions)
+	}, options)
 
 	local self = setmetatable({}, SnapdragonController)
 	-- Basic immutable values
-	local dragGui = dragOptions.DragGui
+	local dragGui = options.DragGui
 	self.dragGui = dragGui
 	self.gui = gui
 	self.originPosition = dragGui.Position
-	self.snapEnabled = snapOptions.SnapEnabled
+	self.snapEnabled = options.SnapEnabled
+	self.dragThreshold = options.DragThreshold
 
 	-- Events
 	local DragEnded = Signal.new()
@@ -42,9 +42,9 @@ function SnapdragonController.new(gui, dragOptions, snapOptions)
 
 	-- Advanced stuff
 	self.maid = Maid.new()
-	self:SetSnapEnabled(snapOptions.SnapEnabled)
-	self:SetSnapMargin(snapOptions.SnapMargin)
-	self:SetSnapThreshold(snapOptions.SnapMarginThreshold)
+	self:SetSnapEnabled(options.SnapEnabled)
+	self:SetSnapMargin(options.SnapMargin)
+	self:SetSnapThreshold(options.SnapMarginThreshold)
 
 	return self
 end
