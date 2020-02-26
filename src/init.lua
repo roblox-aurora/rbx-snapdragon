@@ -158,9 +158,12 @@ local function createRef(gui)
 	return SnapdragonRef.new(gui)
 end
 
-return {
+local export
+export = {
 	createDragController = createDragController, 
 	LEGACY_createDragController = LEGACY_createDragController, 
 	SnapdragonController = SnapdragonController,
 	createRef = createRef
 }
+export.default = export
+return export

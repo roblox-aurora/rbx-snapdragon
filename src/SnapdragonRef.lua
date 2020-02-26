@@ -11,6 +11,10 @@ function SnapdragonRef.new(current)
 	return ref
 end
 
+function SnapdragonRef:Update(current)
+	self.current = current
+end
+
 function SnapdragonRef:Get()
 	return self.current
 end
