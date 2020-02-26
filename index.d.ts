@@ -24,7 +24,7 @@ declare interface DraggingOptions {
 	 *
 	 * Useful for things like titlebars
 	 */
-	dragGui?: GuiObject;
+	dragGui?: GuiObject | SnapdragonRef;
 }
 
 declare interface DraggingSnapOptions {
