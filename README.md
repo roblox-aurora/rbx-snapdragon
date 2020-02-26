@@ -41,7 +41,7 @@ If you want to use Snapdragon with Roact, simply use `Roact.Ref` with the object
 This library aims to add the ability to make your UI draggable without the extra work on your part, as well as make it more flexible with snapping capabilities and constraints (soon&trade;)
 
 ## What about controller support?
-I make an issue about at some point. I would like to add the ability for controllers to drag UI elements at some point. Some console games actually have a faux-mouse type dragging system, it would function in a similar fashion.
+I would like to add the ability for controllers to drag UI elements at some point. Some console games actually have a faux-mouse type dragging system, it would function in a similar fashion.
 
 # API
 The API for Snapdragon can be found [here](index.d.ts)
