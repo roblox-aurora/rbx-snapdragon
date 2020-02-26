@@ -11,6 +11,7 @@
 
 Library for UI dragging support, with snapping capabilities in Roblox.
 
+
 # Basic Usage
 ```ts
 // Typescript
@@ -33,8 +34,16 @@ controller:Disconnect() -- Will disconnect the drag controller from the Gui
 ## Usage with Roact
 If you want to use Snapdragon with Roact, simply use `Roact.Ref` with the object you want to be draggable, and create and assign a controller in the `didMount` method to the ref's instance.
 
-API
--------------
+# FAQ
+## Why not just use `GuiObject.Draggable`?
+`Draggable` is deprecated. It never worked well and isn't flexible - as discussed [here](https://devforum.roblox.com/t/draggable-property-is-hidden-on-gui-objects/107689/5?u=vorlias).
+
+This library aims to add the ability to make your UI draggable without the extra work on your part, as well as make it more flexible with snapping capabilities and constraints (soon&trade;)
+
+## What about controller support?
+I make an issue about at some point. I would like to add the ability for controllers to drag UI elements at some point. Some console games actually have a faux-mouse type dragging system, it would function in a similar fashion.
+
+# API
 The API for Snapdragon can be found [here](index.d.ts)
 
 There will eventually&trade; be proper docs for this library.
