@@ -8,6 +8,16 @@ declare interface SnapProps {
 	SnapThresholdMargin?: SnapMargin;
 }
 
+declare interface SnapdragonRef {
+	Update(gui: GuiObject): void;
+	Get(): GuiObject | undefined;
+}
+
+declare interface SnapdragonRefConstructor {
+	new (gui?: GuiObject): SnapdragonRef;
+	is(value: unknown): value is SnapdragonRef;
+}
+
 declare interface DraggingOptions {
 	/**
 	 * Overrides which object when dragged, will drag this object.
@@ -115,6 +125,12 @@ declare interface SnapdragonController extends LegacySnapdragonController {
 	SetSnapThreshold(snapThreshold: SnapMargin): void;
 
 	/**
+	 * Sets the drag gui
+	 * @param dragGui The drag gui
+	 */
+	SetDragGui(dragGui: GuiObject): void;
+
+	/**
 	 * Fully cleans up this controller & locks it from further use.
 	 * 
 	 * Actions:
@@ -142,6 +158,15 @@ declare interface SnapdragonConstructor {
 }
 
 declare const SnapdragonController: SnapdragonConstructor;
+
+// /**
+//  * A reference for a gui object
+//  * 
+//  * This is useful for Roact-based UI
+//  */
+// declare const SnapdragonRef: SnapdragonRefConstructor;
+
+declare function createRef(gui?: GuiObject): SnapdragonRef;
 
 /**
  *
@@ -176,5 +201,6 @@ export {
 	DraggingOptions,
 	DraggingSnapOptions,
 	SnapdragonController,
-	LegacySnapdragonController
+	LegacySnapdragonController,
+	createRef,
 };

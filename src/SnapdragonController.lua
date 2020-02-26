@@ -2,6 +2,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local objectAssign = require(script.Parent.objectAssign)
 local Signal = require(script.Parent.Signal)
+local SnapdragonRef = require(script.Parent.SnapdragonRef)
 local t = require(script.Parent.t)
 local Maid = require(script.Parent.Maid)
 
@@ -47,6 +48,26 @@ function SnapdragonController.new(gui, dragOptions, snapOptions)
 	return self
 end
 
+function SnapdragonController.createController(gui, dragOptions, snapOptions)
+	dragOptions = objectAssign({
+		dragGui = gui
+	}, dragOptions)
+	snapOptions = objectAssign({
+		snapMargin = {},
+		snapMarginThreshold = {},
+		snapEnabled = false
+	}, snapOptions)
+
+	local existing = controllers[dragOptions.dragGui]
+	if existing then
+		return existing
+	else
+		local controller = SnapdragonController.new(gui, dragOptions, snapOptions)
+		controller:Connect();
+		return controller
+	end
+end
+
 function SnapdragonController.get(instance)
 	return controllers[instance]
 end
@@ -72,6 +93,24 @@ function SnapdragonController:SetSnapThreshold(snapThreshold)
 	self.snapThresholdHorizontal = snapThresholdHorizontal
 end
 
+function SnapdragonController:GetDragGui()
+	local gui = self.dragGui
+	if SnapdragonRef.is(gui) then
+		return gui:Get(), gui
+	else
+		return gui, gui
+	end
+end
+
+function SnapdragonController:GetGui()
+	local gui = self.gui
+	if SnapdragonRef.is(gui) then
+		return gui:Get()
+	else
+		return gui
+	end
+end
+
 function SnapdragonController:ResetPosition()
 	self.dragGui.Position = self.originPosition
 end
@@ -79,9 +118,9 @@ end
 function SnapdragonController:__bindControllerBehaviour()
 	local maid = self.maid
 
-	local gui = self.gui
+	local gui = self:GetGui()
+	local dragGui = self:GetDragGui()
 	local snap = self.snapEnabled
-	local dragGui = self.dragGui
 	local DragEnded = self.DragEnded
 	local DragBegan = self.DragBegan
 
@@ -179,12 +218,13 @@ function SnapdragonController:Connect()
 		error("[SnapdragonController] Cannot connect locked controller!", 2)
 	end
 
-	local dragGui = self.dragGui
+	local _, ref = self:GetDragGui()
 
-	if not controllers[dragGui] then
-		controllers[dragGui] = self
+	if not controllers[ref] or controllers[ref] == self then
+		controllers[ref] = self
+		self:__bindControllerBehaviour()
 	else
-		error("[SnapdragonController] Another controller is already bound to this instance, call Unbind first.", 2)
+		error("[SnapdragonController] This object is already bound to a controller")
 	end
 	return self
 end
@@ -194,16 +234,12 @@ function SnapdragonController:Disconnect()
 		error("[SnapdragonController] Cannot disconnect locked controller!", 2)
 	end
 
-	local dragGui = self.dragGui
+	local _, ref = self:GetDragGui()
 
-	local controller = controllers[dragGui]
+	local controller = controllers[ref]
 	if controller then
-		if controller == self then
-			self.maid:DoCleaning()
-			controllers[dragGui] = nil
-		else
-			error("[SnapdragonController] Another controller is bound to this object!", 2)
-		end
+		self.maid:DoCleaning()
+		controllers[ref] = nil
 	end
 end
 
