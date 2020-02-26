@@ -15,7 +15,7 @@ local DragAxisEnumCheck = t.literal("XY", "X", "Y")
 local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
 
 local OptionsInterfaceCheck = t.interface({
-	DragGui = t.union(t.instanceIsA("Frame"), SnapdragonRef.is),
+	DragGui = t.union(t.instanceIsA("GuiObject"), SnapdragonRef.is),
 	DragThreshold = t.number,
 	SnapMargin = MarginTypeCheck,
 	SnapMarginThreshold = MarginTypeCheck,
@@ -141,12 +141,12 @@ function SnapdragonController:__bindControllerBehaviour()
 
 		gui = dragGui or gui
 
-		local host = gui:FindFirstAncestorOfClass("LayerCollector")
+		local host = gui:FindFirstAncestorOfClass("ScreenGui") or gui:FindFirstAncestorOfClass("PluginGui")
 		local topLeft = Vector2.new()
 		if host and dragRelativeTo == "LayerCollector" then
-			if host:IsA("ScreenGui") and not host.IgnoreGuiInset then
-				topLeft = inset
-			end
+			-- if host:IsA("ScreenGui") and not host.IgnoreGuiInset then
+			-- 	topLeft = inset
+			-- end
 			screenSize = host.AbsoluteSize
 		elseif dragRelativeTo == "Parent" then
 			assert(gui.Parent:IsA("GuiObject"), "DragRelativeTo is set to Parent, but the parent is not a GuiObject!")
