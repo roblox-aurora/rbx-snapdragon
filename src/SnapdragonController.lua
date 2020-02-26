@@ -11,7 +11,7 @@ local MarginTypeCheck = t.interface({
 	Horizontal = t.optional(t.Vector2),
 })
 
-local DragAxisEnumCheck = t.literal("XY", "X", "Y")
+local AxisEnumCheck = t.literal("XY", "X", "Y")
 local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
 
 local OptionsInterfaceCheck = t.interface({
@@ -19,7 +19,7 @@ local OptionsInterfaceCheck = t.interface({
 	DragThreshold = t.number,
 	SnapMargin = MarginTypeCheck,
 	SnapMarginThreshold = MarginTypeCheck,
-	DragAxis = DragAxisEnumCheck,
+	SnapAxis = AxisEnumCheck,
 	DragRelativeTo = DragRelativeToEnumCheck,
 	SnapEnabled = t.boolean,
 })
@@ -36,7 +36,7 @@ function SnapdragonController.new(gui, options)
 		SnapMargin = {},
 		SnapMarginThreshold = {},
 		SnapEnabled = true,
-		DragAxis = "XY",
+		SnapAxis = "XY",
 		DragRelativeTo = "LayerCollector",
 	}, options)
 
@@ -50,7 +50,7 @@ function SnapdragonController.new(gui, options)
 	self.originPosition = dragGui.Position
 	self.snapEnabled = options.SnapEnabled
 	self.dragThreshold = options.DragThreshold
-	self.dragAxis = options.DragAxis
+	self.snapAxis = options.SnapAxis
 	self.dragRelativeTo = options.DragRelativeTo
 
 	-- Events
@@ -119,7 +119,7 @@ function SnapdragonController:__bindControllerBehaviour()
 	local snap = self.snapEnabled
 	local DragEnded = self.DragEnded
 	local DragBegan = self.DragBegan
-	local dragAxis = self.dragAxis
+	local snapAxis = self.snapAxis
 	local dragRelativeTo = self.dragRelativeTo
 
 	local dragging
@@ -134,9 +134,6 @@ function SnapdragonController:__bindControllerBehaviour()
 		local snapThresholdHorizontal = self.snapThresholdHorizontal
 
 		local screenSize = workspace.CurrentCamera.ViewportSize
-		local inset = game:GetService("GuiService"):GetGuiInset()
-		
-
 		local delta = input.Position - dragStart
 
 		gui = dragGui or gui
@@ -144,18 +141,10 @@ function SnapdragonController:__bindControllerBehaviour()
 		local host = gui:FindFirstAncestorOfClass("ScreenGui") or gui:FindFirstAncestorOfClass("PluginGui")
 		local topLeft = Vector2.new()
 		if host and dragRelativeTo == "LayerCollector" then
-			-- if host:IsA("ScreenGui") and not host.IgnoreGuiInset then
-			-- 	topLeft = inset
-			-- end
 			screenSize = host.AbsoluteSize
 		elseif dragRelativeTo == "Parent" then
 			assert(gui.Parent:IsA("GuiObject"), "DragRelativeTo is set to Parent, but the parent is not a GuiObject!")
-
 			screenSize = gui.Parent.AbsoluteSize
-			topLeft = gui.Parent.AbsolutePosition
-			if host:IsA("ScreenGui") and host.IgnoreGuiInset then
-				topLeft = topLeft + inset
-			end
 		end
 
 		if snap then
@@ -166,7 +155,7 @@ function SnapdragonController:__bindControllerBehaviour()
 			local absSize = gui.AbsoluteSize + Vector2.new(snapHorizontalMargin.Y, snapVerticalMargin.Y + topLeft.Y)
 
 
-			if dragAxis == "XY" or dragAxis == "X" then
+			if snapAxis == "XY" or snapAxis == "X" then
 				if (resultingOffsetX + scaleOffsetX) > screenSize.X - absSize.X - snapThresholdHorizontal.Y then
 					resultingOffsetX = screenSize.X - absSize.X - scaleOffsetX
 				elseif (resultingOffsetX + scaleOffsetX) < snapHorizontalMargin.X + snapThresholdHorizontal.X then
@@ -174,7 +163,7 @@ function SnapdragonController:__bindControllerBehaviour()
 				end
 			end
 
-			if dragAxis == "XY" or dragAxis == "Y" then
+			if snapAxis == "XY" or snapAxis == "Y" then
 				if (resultingOffsetY + scaleOffsetY) > screenSize.Y - absSize.Y - snapThresholdVertical.Y then
 					resultingOffsetY = screenSize.Y - absSize.Y - scaleOffsetY
 				elseif (resultingOffsetY + scaleOffsetY) < snapVerticalMargin.X + snapThresholdVertical.X then
