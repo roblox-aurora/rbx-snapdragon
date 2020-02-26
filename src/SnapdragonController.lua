@@ -6,7 +6,7 @@ local SnapdragonRef = require(script.Parent.SnapdragonRef)
 local t = require(script.Parent.t)
 local Maid = require(script.Parent.Maid)
 
-local marginType = t.interface({
+local isMarginProp = t.interface({
 	Vertical = t.optional(t.Vector2),
 	Horizontal = t.optional(t.Vector2),
 })
@@ -18,20 +18,21 @@ local controllers = setmetatable({}, {__mode = "k"})
 
 function SnapdragonController.new(gui, dragOptions, snapOptions)
 	dragOptions = objectAssign({
-		dragGui = gui
+		DragGui = gui
 	}, dragOptions)
 	snapOptions = objectAssign({
-		snapMargin = {},
-		snapMarginThreshold = {},
-		snapEnabled = false
+		SnapMargin = {},
+		SnapMarginThreshold = {},
+		SnapEnabled = true
 	}, snapOptions)
 
 	local self = setmetatable({}, SnapdragonController)
 	-- Basic immutable values
-	local dragGui = dragOptions.dragGui
+	local dragGui = dragOptions.DragGui
 	self.dragGui = dragGui
 	self.gui = gui
 	self.originPosition = dragGui.Position
+	self.snapEnabled = snapOptions.SnapEnabled
 
 	-- Events
 	local DragEnded = Signal.new()
@@ -41,35 +42,11 @@ function SnapdragonController.new(gui, dragOptions, snapOptions)
 
 	-- Advanced stuff
 	self.maid = Maid.new()
-	self:SetSnapEnabled(snapOptions.snapEnabled)
-	self:SetSnapMargin(snapOptions.snapMargin)
-	self:SetSnapThreshold(snapOptions.snapMarginThreshold)
+	self:SetSnapEnabled(snapOptions.SnapEnabled)
+	self:SetSnapMargin(snapOptions.SnapMargin)
+	self:SetSnapThreshold(snapOptions.SnapMarginThreshold)
 
 	return self
-end
-
-function SnapdragonController.createController(gui, dragOptions, snapOptions)
-	dragOptions = objectAssign({
-		dragGui = gui
-	}, dragOptions)
-	snapOptions = objectAssign({
-		snapMargin = {},
-		snapMarginThreshold = {},
-		snapEnabled = false
-	}, snapOptions)
-
-	local existing = controllers[dragOptions.dragGui]
-	if existing then
-		return existing
-	else
-		local controller = SnapdragonController.new(gui, dragOptions, snapOptions)
-		controller:Connect();
-		return controller
-	end
-end
-
-function SnapdragonController.get(instance)
-	return controllers[instance]
 end
 
 function SnapdragonController:SetSnapEnabled(snapEnabled)
@@ -78,7 +55,7 @@ function SnapdragonController:SetSnapEnabled(snapEnabled)
 end
 
 function SnapdragonController:SetSnapMargin(snapMargin)
-	assert(marginType(snapMargin))
+	assert(isMarginProp(snapMargin))
 	local snapVerticalMargin = snapMargin.Vertical or Vector2.new()
 	local snapHorizontalMargin = snapMargin.Horizontal or Vector2.new()
 	self.snapVerticalMargin = snapVerticalMargin
@@ -86,7 +63,7 @@ function SnapdragonController:SetSnapMargin(snapMargin)
 end
 
 function SnapdragonController:SetSnapThreshold(snapThreshold)
-	assert(marginType(snapThreshold))
+	assert(isMarginProp(snapThreshold))
 	local snapThresholdVertical = snapThreshold.Vertical or Vector2.new()
 	local snapThresholdHorizontal = snapThreshold.Horizontal or Vector2.new()
 	self.snapThresholdVertical = snapThresholdVertical

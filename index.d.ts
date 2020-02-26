@@ -24,14 +24,14 @@ declare interface DraggingOptions {
 	 *
 	 * Useful for things like titlebars
 	 */
-	dragGui?: GuiObject | SnapdragonRef;
+	DragGui?: GuiObject | SnapdragonRef;
 }
 
 declare interface DraggingSnapOptions {
 	/**
 	 * The margin to the edges of the parent container
 	 */
-	snapMargin?: SnapMargin;
+	SnapMargin?: SnapMargin;
 
 	/**
 	 * The threshold margin for snapping to edges.
@@ -40,14 +40,14 @@ declare interface DraggingSnapOptions {
 	 *
 	 * That means if the dragged object comes within 40 pixels, it will snap to the edge.
 	 */
-	snapThreshold?: SnapMargin;
+	SnapThreshold?: SnapMargin;
 
 	/**
 	 * Whether or not the snapping behaviour is enabled
 	 *
 	 * (true by default)
 	 */
-	snapEnabled?: boolean;
+	SnapEnabled?: boolean;
 }
 
 declare interface Signal<
@@ -153,8 +153,6 @@ declare interface SnapdragonConstructor {
 		dragOptions?: DraggingOptions,
 		dragSnapOptions?: DraggingSnapOptions,
 	): SnapdragonController;
-
-	get(instance: GuiObject): SnapdragonController | undefined;
 }
 
 declare const SnapdragonController: SnapdragonConstructor;
