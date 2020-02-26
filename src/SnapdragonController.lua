@@ -17,9 +17,11 @@ local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
 local OptionsInterfaceCheck = t.interface({
 	DragGui = t.union(t.instanceIsA("GuiObject"), SnapdragonRef.is),
 	DragThreshold = t.number,
+	DragGridSize = t.number,
 	SnapMargin = MarginTypeCheck,
 	SnapMarginThreshold = MarginTypeCheck,
 	SnapAxis = AxisEnumCheck,
+	DragAxis = AxisEnumCheck,
 	DragRelativeTo = DragRelativeToEnumCheck,
 	SnapEnabled = t.boolean,
 })
@@ -33,10 +35,12 @@ function SnapdragonController.new(gui, options)
 	options = objectAssign({
 		DragGui = gui,
 		DragThreshold = 0,
+		DragGridSize = 0,
 		SnapMargin = {},
 		SnapMarginThreshold = {},
 		SnapEnabled = true,
 		SnapAxis = "XY",
+		DragAxis = "XY",
 		DragRelativeTo = "LayerCollector",
 	}, options)
 
@@ -51,7 +55,9 @@ function SnapdragonController.new(gui, options)
 	self.snapEnabled = options.SnapEnabled
 	self.dragThreshold = options.DragThreshold
 	self.snapAxis = options.SnapAxis
+	self.dragAxis = options.DragAxis
 	self.dragRelativeTo = options.DragRelativeTo
+	self.dragGridSize = options.DragGridSize
 
 	-- Events
 	local DragEnded = Signal.new()
@@ -120,12 +126,15 @@ function SnapdragonController:__bindControllerBehaviour()
 	local DragEnded = self.DragEnded
 	local DragBegan = self.DragBegan
 	local snapAxis = self.snapAxis
+	local dragAxis = self.dragAxis
 	local dragRelativeTo = self.dragRelativeTo
+	local dragGridSize = self.dragGridSize
 
 	local dragging
 	local dragInput
 	local dragStart
 	local startPos
+
 
 	local function update(input)
 		local snapHorizontalMargin = self.snapHorizontalMargin
@@ -135,6 +144,12 @@ function SnapdragonController:__bindControllerBehaviour()
 
 		local screenSize = workspace.CurrentCamera.ViewportSize
 		local delta = input.Position - dragStart
+
+		if dragAxis == "X" then
+			delta = Vector3.new(delta.X, 0, 0)
+		elseif dragAxis == "Y" then
+			delta = Vector3.new(0, delta.Y, 0)
+		end
 
 		gui = dragGui or gui
 
@@ -170,9 +185,21 @@ function SnapdragonController:__bindControllerBehaviour()
 					resultingOffsetY = -scaleOffsetY + (snapVerticalMargin.X)
 				end
 			end
+			
+			if dragGridSize > 0 then
+				resultingOffsetX = math.floor(resultingOffsetX / dragGridSize) * dragGridSize
+				resultingOffsetY = math.floor(resultingOffsetY / dragGridSize) * dragGridSize
+			end
 
 			gui.Position = UDim2.new(startPos.X.Scale, resultingOffsetX, startPos.Y.Scale, resultingOffsetY)
 		else
+			if dragGridSize > 0 then
+				delta = Vector2.new(
+					math.floor(delta.X / dragGridSize) * dragGridSize,
+					math.floor(delta.Y / dragGridSize) * dragGridSize
+				)
+			end
+
 			gui.Position =
 				UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 		end

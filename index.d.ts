@@ -44,6 +44,11 @@ declare interface DraggingOptions {
 	 * @todo
 	 */
 	DragRelativeTo?: "LayerCollector" | "Parent";
+
+	/**
+	 * @todo
+	 */
+	DragGridSize?: number;
 }
 
 declare interface DraggingSnapOptions {
@@ -67,6 +72,11 @@ declare interface DraggingSnapOptions {
 	 * (true by default)
 	 */
 	SnapEnabled?: boolean;
+
+	/**
+	 * @todo
+	 */
+	SnapAxis?: "XY" | "X" | "Y";
 }
 
 declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {
