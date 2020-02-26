@@ -15,7 +15,7 @@ local DragAxisEnumCheck = t.literal("XY", "X", "Y")
 local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
 
 local OptionsInterfaceCheck = t.interface({
-	DragGui = t.instanceIsA("Frame"),
+	DragGui = t.union(t.instanceIsA("Frame"), SnapdragonRef.is),
 	DragThreshold = t.number,
 	SnapMargin = MarginTypeCheck,
 	SnapMarginThreshold = MarginTypeCheck,
