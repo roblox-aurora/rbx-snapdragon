@@ -49,6 +49,11 @@ declare interface DraggingOptions {
 	 * @todo
 	 */
 	DragGridSize?: number;
+
+	/**
+	 * @todo
+	 */
+	DragPositionMode?: "Scale" | "Offset";
 }
 
 declare interface DraggingSnapOptions {

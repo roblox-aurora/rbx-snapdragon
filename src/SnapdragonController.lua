@@ -13,6 +13,7 @@ local MarginTypeCheck = t.interface({
 
 local AxisEnumCheck = t.literal("XY", "X", "Y")
 local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
+local DragPositionModeEnumCheck = t.literal("Offset", "Scale")
 
 local OptionsInterfaceCheck = t.interface({
 	DragGui = t.union(t.instanceIsA("GuiObject"), SnapdragonRef.is),
@@ -24,6 +25,7 @@ local OptionsInterfaceCheck = t.interface({
 	DragAxis = AxisEnumCheck,
 	DragRelativeTo = DragRelativeToEnumCheck,
 	SnapEnabled = t.boolean,
+	DragPositionMode = DragPositionModeEnumCheck,
 })
 
 local SnapdragonController = {}
@@ -42,6 +44,7 @@ function SnapdragonController.new(gui, options)
 		SnapAxis = "XY",
 		DragAxis = "XY",
 		DragRelativeTo = "LayerCollector",
+		DragPositionMode = "Scale",
 	}, options)
 
 	assert(OptionsInterfaceCheck(options))
@@ -52,12 +55,15 @@ function SnapdragonController.new(gui, options)
 	self.dragGui = dragGui
 	self.gui = gui
 	self.originPosition = dragGui.Position
+
 	self.snapEnabled = options.SnapEnabled
-	self.dragThreshold = options.DragThreshold
 	self.snapAxis = options.SnapAxis
+
 	self.dragAxis = options.DragAxis
+	self.dragThreshold = options.DragThreshold
 	self.dragRelativeTo = options.DragRelativeTo
 	self.dragGridSize = options.DragGridSize
+	self.dragPositionMode = options.DragPositionMode
 
 	-- Events
 	local DragEnded = Signal.new()
@@ -129,6 +135,7 @@ function SnapdragonController:__bindControllerBehaviour()
 	local dragAxis = self.dragAxis
 	local dragRelativeTo = self.dragRelativeTo
 	local dragGridSize = self.dragGridSize
+	local dragPositionMode = self.dragPositionMode
 
 	local dragging
 	local dragInput
@@ -185,13 +192,18 @@ function SnapdragonController:__bindControllerBehaviour()
 					resultingOffsetY = -scaleOffsetY + (snapVerticalMargin.X)
 				end
 			end
+
 			
 			if dragGridSize > 0 then
 				resultingOffsetX = math.floor(resultingOffsetX / dragGridSize) * dragGridSize
 				resultingOffsetY = math.floor(resultingOffsetY / dragGridSize) * dragGridSize
 			end
 
-			gui.Position = UDim2.new(startPos.X.Scale, resultingOffsetX, startPos.Y.Scale, resultingOffsetY)
+			if dragPositionMode == "Offset" then
+				gui.Position = UDim2.new(startPos.X.Scale, resultingOffsetX, startPos.Y.Scale, resultingOffsetY)
+			else
+				gui.Position = UDim2.new(startPos.X.Scale + (resultingOffsetX / screenSize.X), 0, startPos.Y.Scale + (resultingOffsetY / screenSize.Y), 0)
+			end
 		else
 			if dragGridSize > 0 then
 				delta = Vector2.new(
