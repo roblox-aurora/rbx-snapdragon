@@ -17,7 +17,7 @@ Library for UI dragging support, with snapping capabilities in Roblox.
 ```ts
 // Typescript
 import { createDragController } from "@rbxts/snapdragon";
-const controller = createDragController(gui, undefined, {SnapEnabled: true});
+const controller = createDragController(gui, {SnapEnabled: true});
 controller.Connect() // Attaches the controller to the gui you specify
 
 controller.Disconnect() // Will disconnect the drag controller from the Gui
@@ -26,7 +26,7 @@ controller.Disconnect() // Will disconnect the drag controller from the Gui
 ```lua
 -- Lua
 local Snapdragon = require(snapdragonModule)
-local controller = Snapdragon.createDragController(gui, nil, {SnapEnabled = true})
+local controller = Snapdragon.createDragController(gui, {SnapEnabled = true})
 controller:Connect() -- Attaches the controller to the gui you specify
 
 controller:Disconnect() -- Will disconnect the drag controller from the Gui
