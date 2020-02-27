@@ -1,6 +1,7 @@
 <div align="center">
 	<img src="https://assets.vorlias.com/i1/snapdragon.png"/>
 
+
 </div>
 <div align="center">
   	<h1>Snapdragon</h1>
