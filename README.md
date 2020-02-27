@@ -1,66 +1,50 @@
-Snapdragon
-=============
-A controller that makes draggable GuiObjects with snapping capabilities.
+<div align="center">
+	<img src="https://assets.vorlias.com/i1/snapdragon.png"/>
 
 
-API
--------------
+</div>
+<div align="center">
+  	<h1>Snapdragon</h1>
+	<a href="https://www.npmjs.com/package/@rbxts/snapdragon">
+		<img src="https://badge.fury.io/js/%40rbxts%2Fsnapdragon.svg"></img>
+	</a>
+</div>
+
+Library for UI dragging support, with snapping capabilities in Roblox.
+
+
+# Basic Usage
 ```ts
-declare interface SnapdragonController {
-  Disconnect(): void
-}
-namespace Snapdragon {
-  type SnapMargin = { Vertical?: Vector2; Horizontal?: Vector2 };
+// Typescript
+import { createDragController } from "@rbxts/snapdragon";
+const controller = createDragController(gui, undefined, {SnapEnabled: true});
+controller.Connect() // Attaches the controller to the gui you specify
 
-  interface SnapProps {
-    SnapEnabled: boolean | undefined;
-    SnapIgnoresOffset: boolean | undefined;
-    SnapMargin: SnapMargin | undefined;
-    SnapThresholdMargin?: SnapMargin;
-  }
-
-  interface DraggingOptions {
-	/**
-	 * Overrides which object when dragged, will drag this object.
-	 * 
-	 * Useful for things like titlebars
-	 */
-    dragGui?: GuiObject;
-  }
-
-  interface DraggingSnapOptions {
-    /**
-     * The margin to the edges of the parent container
-     */
-    snapMargin?: SnapMargin;
-
-    /**
-     * The threshold margin for snapping to edges.
-     * 
-     * It's additive to the snapMargin, so a margin of 20 + a snap threshold of 20 = total snapThreshold of 40.
-     * 
-     * That means if the dragged object comes within 40 pixels, it will snap to the edge.
-     */
-    snapThreshold?: SnapMargin;
-
-    /**
-     * Whether or not the snapping behaviour is enabled
-     * 
-     * (true by default)
-     */
-    snapEnabled?: boolean;
-  }
-
- /**
- *
- * @param gui The gui that ends up being dragged
- * @param dragOptions Options relating to the dragging
- * @param dragSnapOptions Options relating to the snapping behaviour
- */
-  export function createDragController(
-	  gui: GuiObject,
-	  dragOptions?: DraggingOptions,
-	  dragSnapOptions?: DraggingSnapOptions,
-  ): SnapdragonController;
-}
+controller.Disconnect() // Will disconnect the drag controller from the Gui
 ```
+
+```lua
+-- Lua
+local Snapdragon = require(snapdragonModule)
+local controller = Snapdragon.createDragController(gui, nil, {SnapEnabled = true})
+controller:Connect() -- Attaches the controller to the gui you specify
+
+controller:Disconnect() -- Will disconnect the drag controller from the Gui
+```
+
+## Usage with Roact
+If you want to use Snapdragon with Roact, simply use `Roact.Ref` with the object you want to be draggable, and create and assign a controller in the `didMount` method to the ref's instance.
+
+# FAQ
+## Why not just use `GuiObject.Draggable`?
+`Draggable` is deprecated. It never worked well and isn't flexible - as discussed [here](https://devforum.roblox.com/t/draggable-property-is-hidden-on-gui-objects/107689/5?u=vorlias).
+
+This library aims to add the ability to make your UI draggable without the extra work on your part, as well as make it more flexible with snapping capabilities and constraints (soon&trade;)
+
+## What about controller support?
+I would like to add the ability for controllers to drag UI elements at some point. Some console games actually have a faux-mouse type dragging system, it would function in a similar fashion.
+
+# API
+The API for Snapdragon can be found [here](index.d.ts)
+
+There will eventually&trade; be proper docs for this library.
