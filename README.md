@@ -12,6 +12,8 @@
 
 Library for UI dragging support, with snapping capabilities in Roblox.
 
+Documentation for Snapdragon can be found at https://roblox-aurora.github.io/rbx-snapdragon
+
 
 # Basic Usage
 ```ts
