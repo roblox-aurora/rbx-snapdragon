@@ -176,33 +176,50 @@ function SnapdragonController:__bindControllerBehaviour()
 			local resultingOffsetY = startPos.Y.Offset + delta.Y
 			local absSize = gui.AbsoluteSize + Vector2.new(snapHorizontalMargin.Y, snapVerticalMargin.Y + topLeft.Y)
 
+			local anchorOffset = Vector2.new(
+				gui.AbsoluteSize.X * gui.AnchorPoint.X,
+				gui.AbsoluteSize.Y * gui.AnchorPoint.Y
+			)
 
 			if snapAxis == "XY" or snapAxis == "X" then
-				if (resultingOffsetX + scaleOffsetX) > screenSize.X - absSize.X - snapThresholdHorizontal.Y then
-					resultingOffsetX = screenSize.X - absSize.X - scaleOffsetX
-				elseif (resultingOffsetX + scaleOffsetX) < snapHorizontalMargin.X + snapThresholdHorizontal.X then
-					resultingOffsetX = -scaleOffsetX + (snapHorizontalMargin.X)
+				local computedMinX = snapHorizontalMargin.X + anchorOffset.X
+				local computedMaxX = screenSize.X - absSize.X + anchorOffset.X
+
+				if (resultingOffsetX + scaleOffsetX) > computedMaxX - snapThresholdHorizontal.Y then
+					resultingOffsetX = computedMaxX - scaleOffsetX
+				elseif (resultingOffsetX + scaleOffsetX) < computedMinX + snapThresholdHorizontal.X then
+					resultingOffsetX = -scaleOffsetX + computedMinX
 				end
 			end
 
 			if snapAxis == "XY" or snapAxis == "Y" then
-				if (resultingOffsetY + scaleOffsetY) > screenSize.Y - absSize.Y - snapThresholdVertical.Y then
-					resultingOffsetY = screenSize.Y - absSize.Y - scaleOffsetY
-				elseif (resultingOffsetY + scaleOffsetY) < snapVerticalMargin.X + snapThresholdVertical.X then
-					resultingOffsetY = -scaleOffsetY + (snapVerticalMargin.X)
+				local computedMinY = snapVerticalMargin.X + anchorOffset.Y
+				local computedMaxY = screenSize.Y - absSize.Y + anchorOffset.Y
+
+				if (resultingOffsetY + scaleOffsetY) > computedMaxY - snapThresholdVertical.Y then
+					resultingOffsetY = computedMaxY - scaleOffsetY
+				elseif (resultingOffsetY + scaleOffsetY) < computedMinY + snapThresholdVertical.X then
+					resultingOffsetY = -scaleOffsetY + computedMinY
 				end
 			end
 
-			
 			if dragGridSize > 0 then
 				resultingOffsetX = math.floor(resultingOffsetX / dragGridSize) * dragGridSize
 				resultingOffsetY = math.floor(resultingOffsetY / dragGridSize) * dragGridSize
 			end
 
 			if dragPositionMode == "Offset" then
-				gui.Position = UDim2.new(startPos.X.Scale, resultingOffsetX, startPos.Y.Scale, resultingOffsetY)
+				gui.Position = UDim2.new(
+					startPos.X.Scale, resultingOffsetX,
+					startPos.Y.Scale, resultingOffsetY
+				)
 			else
-				gui.Position = UDim2.new(startPos.X.Scale + (resultingOffsetX / screenSize.X), 0, startPos.Y.Scale + (resultingOffsetY / screenSize.Y), 0)
+				gui.Position = UDim2.new(
+					startPos.X.Scale + (resultingOffsetX / screenSize.X),
+					0,
+					startPos.Y.Scale + (resultingOffsetY / screenSize.Y),
+					0
+				)
 			end
 		else
 			if dragGridSize > 0 then
@@ -213,7 +230,12 @@ function SnapdragonController:__bindControllerBehaviour()
 			end
 
 			gui.Position =
-				UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+				UDim2.new(
+					startPos.X.Scale,
+					startPos.X.Offset + delta.X,
+					startPos.Y.Scale,
+					startPos.Y.Offset + delta.Y
+				)
 		end
 	end
 
