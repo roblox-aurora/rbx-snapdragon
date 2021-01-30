@@ -137,6 +137,8 @@ function SnapdragonController:__bindControllerBehaviour()
 	local dragGridSize = self.dragGridSize
 	local dragPositionMode = self.dragPositionMode
 
+	local reachedExtents
+
 	local dragging
 	local dragInput
 	local dragStart
@@ -159,6 +161,10 @@ function SnapdragonController:__bindControllerBehaviour()
 		end
 
 		gui = dragGui or gui
+		reachedExtents = {
+			X = "Float",
+			Y = "Float"
+		}
 
 		local host = gui:FindFirstAncestorOfClass("ScreenGui") or gui:FindFirstAncestorOfClass("PluginGui")
 		local topLeft = Vector2.new()
@@ -187,8 +193,10 @@ function SnapdragonController:__bindControllerBehaviour()
 
 				if (resultingOffsetX + scaleOffsetX) > computedMaxX - snapThresholdHorizontal.Y then
 					resultingOffsetX = computedMaxX - scaleOffsetX
+					reachedExtents.X = "Max"
 				elseif (resultingOffsetX + scaleOffsetX) < computedMinX + snapThresholdHorizontal.X then
 					resultingOffsetX = -scaleOffsetX + computedMinX
+					reachedExtents.X =  "Min"
 				end
 			end
 
@@ -198,8 +206,10 @@ function SnapdragonController:__bindControllerBehaviour()
 
 				if (resultingOffsetY + scaleOffsetY) > computedMaxY - snapThresholdVertical.Y then
 					resultingOffsetY = computedMaxY - scaleOffsetY
+					reachedExtents.Y = "Max"
 				elseif (resultingOffsetY + scaleOffsetY) < computedMinY + snapThresholdVertical.X then
 					resultingOffsetY = -scaleOffsetY + computedMinY
+					reachedExtents.Y = "Min"
 				end
 			end
 
@@ -246,18 +256,16 @@ function SnapdragonController:__bindControllerBehaviour()
 				dragStart = input.Position
 				startPos = (dragGui or gui).Position
 				DragBegan:Fire(dragStart)
-
-				input.Changed:Connect(
-					function()
-						if input.UserInputState == Enum.UserInputState.End then
-							dragging = false
-							DragEnded:Fire(input.Position)
-						end
-					end
-				)
 			end
 		end
 	)
+
+	maid.guiInputEnded = gui.InputEnded:Connect(function(input)
+		if input.UserInputState == Enum.UserInputState.End and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+			dragging = false
+			DragEnded:Fire(input.Position, reachedExtents)
+		end
+	end)
 
 	maid.guiInputChanged = gui.InputChanged:Connect(
 		function(input)

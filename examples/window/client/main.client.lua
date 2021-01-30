@@ -32,6 +32,9 @@ do
 
 	-- attach dragger to window
 	local controller = Snapdragon.createDragController(windowFrame, {SnapEnabled = true});
+	controller.DragEnded:Connect(function(_, ext)
+		print("ext", tick(),  ext.X, ext.Y)
+	end)
 	controller:Connect()
 end
 
