@@ -18,6 +18,9 @@ declare interface SnapdragonRefConstructor {
 	is(value: unknown): value is SnapdragonRef;
 }
 
+declare type DragPositionMode = "Scale" | "Offset";
+declare type AxisConstraint = "XY" | "X" | "Y";
+
 declare interface DraggingOptions {
 	/**
 	 * Overrides which object when dragged, will drag this object.
@@ -38,7 +41,7 @@ declare interface DraggingOptions {
 	/**
 	 * @todo
 	 */
-	DragAxis?: "XY" | "X" | "Y";
+	DragAxis?: AxisConstraint;
 
 	/**
 	 * @todo
@@ -53,7 +56,17 @@ declare interface DraggingOptions {
 	/**
 	 * @todo
 	 */
-	DragPositionMode?: "Scale" | "Offset";
+	DragPositionMode?: DragPositionMode;
+	
+	/**
+	 * The position is reset on drag end
+	 */
+	DragEndedResetsPosition?: boolean;
+
+	/**
+	 * Callback to whether or not to allow this component to drag
+	 */
+	CanDrag?: () => boolean;
 }
 
 declare interface DraggingSnapOptions {
@@ -81,7 +94,7 @@ declare interface DraggingSnapOptions {
 	/**
 	 * @todo
 	 */
-	SnapAxis?: "XY" | "X" | "Y";
+	SnapAxis?: AxisConstraint;
 }
 
 declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {
@@ -114,6 +127,30 @@ declare interface Signal<
 	Wait(): LuaTuple<FunctionArguments<ConnectedFunctionSignature>>;
 }
 
+declare type Extents = "Float" | "Min" | "Max";
+
+declare interface Vector2Extents {
+	X: Extents,
+	Y: Extents
+}
+
+declare interface DragBeganEvent {
+	InputPosition: Vector3;
+	GuiPosition: UDim2;
+}
+
+declare interface DragEndedEvent {
+	InputPosition: Vector3;
+	GuiPosition: UDim2;
+	ReachedExtents: Vector2Extents;
+}
+
+declare interface DragChangedEvent {
+	GuiPosition: UDim2;
+	DragPositionMode?: DragPositionMode;
+	SnapAxis?: AxisConstraint;
+}
+
 declare interface SnapdragonController {
 	/**
 	 * Stops this drag controller from listening for drag events.
@@ -130,12 +167,14 @@ declare interface SnapdragonController {
 	/**
 	 * Event called when the dragging stops
 	 */
-	DragEnded: Signal<(position: Vector3) => void>;
+	DragEnded: Signal<(event: DragEndedEvent) => void>;
+
+	DragChanged: Signal<(event: DragChangedEvent) => void>;
 
 	/**
 	 * Event called when the dragging begins
 	 */
-	DragBegan: Signal<(position: Vector3) => void>;
+	DragBegan: Signal<(event: DragBeganEvent) => void>;
 
 	/**
 	 * Connects this controller to the gui

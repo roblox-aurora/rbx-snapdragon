@@ -1,0 +1,8 @@
+[package]
+name = "vorlias/snapdragon"
+description = "Dragging library with snapping capabilities for Roblox UI"
+version = "2.0.0"
+license = "MIT"
+authors = ["Vorlias"]
+realm = "shared"
+registry = "https://github.com/upliftgames/wally-index"

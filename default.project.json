@@ -1,0 +1,6 @@
+{
+	"name": "snapdragon",
+	"tree": {
+        "$path": "src"
+    }
+}

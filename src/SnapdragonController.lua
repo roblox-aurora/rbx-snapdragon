@@ -25,6 +25,7 @@ local OptionsInterfaceCheck = t.interface({
 	DragAxis = AxisEnumCheck,
 	DragRelativeTo = DragRelativeToEnumCheck,
 	SnapEnabled = t.boolean,
+	Debugging = t.boolean,
 	DragPositionMode = DragPositionModeEnumCheck,
 })
 
@@ -41,8 +42,10 @@ function SnapdragonController.new(gui, options)
 		SnapMargin = {},
 		SnapMarginThreshold = {},
 		SnapEnabled = true,
+		DragEndedResetsPosition = false,
 		SnapAxis = "XY",
 		DragAxis = "XY",
+		Debugging = false,
 		DragRelativeTo = "LayerCollector",
 		DragPositionMode = "Scale",
 	}, options)
@@ -54,7 +57,10 @@ function SnapdragonController.new(gui, options)
 	local dragGui = options.DragGui
 	self.dragGui = dragGui
 	self.gui = gui
+	self.debug = options.Debugging
 	self.originPosition = dragGui.Position
+	self.canDrag = options.CanDrag
+	self.dragEndedResetsPosition = options.DragEndedResetsPosition
 
 	self.snapEnabled = options.SnapEnabled
 	self.snapAxis = options.SnapAxis
@@ -65,11 +71,16 @@ function SnapdragonController.new(gui, options)
 	self.dragGridSize = options.DragGridSize
 	self.dragPositionMode = options.DragPositionMode
 
+	-- Internal stuff
+	self._useAbsoluteCoordinates = false
+
 	-- Events
 	local DragEnded = Signal.new()
+	local DragChanged = Signal.new()
 	local DragBegan = Signal.new()
 	self.DragEnded = DragEnded
 	self.DragBegan = DragBegan
+	self.DragChanged = DragChanged
 
 	-- Advanced stuff
 	self.maid = Maid.new()
@@ -125,17 +136,21 @@ end
 
 function SnapdragonController:__bindControllerBehaviour()
 	local maid = self.maid
+	local debug = self.debug
 
 	local gui = self:GetGui()
 	local dragGui = self:GetDragGui()
 	local snap = self.snapEnabled
 	local DragEnded = self.DragEnded
 	local DragBegan = self.DragBegan
+	local DragChanged = self.DragChanged
 	local snapAxis = self.snapAxis
 	local dragAxis = self.dragAxis
 	local dragRelativeTo = self.dragRelativeTo
 	local dragGridSize = self.dragGridSize
 	local dragPositionMode = self.dragPositionMode
+
+	local useAbsoluteCoordinates = self._useAbsoluteCoordinates;
 
 	local reachedExtents
 
@@ -143,6 +158,7 @@ function SnapdragonController:__bindControllerBehaviour()
 	local dragInput
 	local dragStart
 	local startPos
+	local guiStartPos
 
 
 	local function update(input)
@@ -219,17 +235,31 @@ function SnapdragonController:__bindControllerBehaviour()
 			end
 
 			if dragPositionMode == "Offset" then
-				gui.Position = UDim2.new(
+				local newPosition = UDim2.new(
 					startPos.X.Scale, resultingOffsetX,
 					startPos.Y.Scale, resultingOffsetY
 				)
+
+				gui.Position = newPosition
+
+				DragChanged:Fire({
+					GuiPosition = newPosition
+				})
 			else
-				gui.Position = UDim2.new(
+				local newPosition = UDim2.new(
 					startPos.X.Scale + (resultingOffsetX / screenSize.X),
 					0,
 					startPos.Y.Scale + (resultingOffsetY / screenSize.Y),
 					0
 				)
+
+				gui.Position = newPosition
+
+				DragChanged:Fire({
+					SnapAxis = snapAxis,
+					GuiPosition = newPosition,
+					DragPositionMode = dragPositionMode,
+				})
 			end
 		else
 			if dragGridSize > 0 then
@@ -239,31 +269,71 @@ function SnapdragonController:__bindControllerBehaviour()
 				)
 			end
 
-			gui.Position =
-				UDim2.new(
-					startPos.X.Scale,
-					startPos.X.Offset + delta.X,
-					startPos.Y.Scale,
-					startPos.Y.Offset + delta.Y
-				)
+			local newPosition = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+			gui.Position = newPosition
+			DragChanged:Fire({
+				GuiPosition = newPosition
+			})
 		end
 	end
 
 	maid.guiInputBegan = gui.InputBegan:Connect(
 		function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			local canDrag = true
+			if type(self.canDrag) == "function" then
+				canDrag = self.canDrag()
+			end
+
+			if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and canDrag then
 				dragging = true
 				dragStart = input.Position
-				startPos = (dragGui or gui).Position
-				DragBegan:Fire(dragStart)
+				local draggingGui = (dragGui or gui)
+				startPos = useAbsoluteCoordinates
+					and UDim2.new(0, draggingGui.AbsolutePosition.X, 0, draggingGui.AbsolutePosition.Y)
+					or draggingGui.Position
+				guiStartPos = draggingGui.Position
+				DragBegan:Fire({
+					AbsolutePosition = (dragGui or gui).AbsolutePosition,
+					InputPosition = dragStart,
+					GuiPosition = startPos
+				})
+				if debug then
+					print("[snapdragon]", "Drag began", input.Position)
+				end
 			end
 		end
 	)
 
 	maid.guiInputEnded = gui.InputEnded:Connect(function(input)
-		if input.UserInputState == Enum.UserInputState.End and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		if dragging and input.UserInputState == Enum.UserInputState.End and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
 			dragging = false
-			DragEnded:Fire(input.Position, reachedExtents)
+
+			local draggingGui = (dragGui or gui)
+			local endPos = draggingGui.Position --useAbsoluteCoordinates
+				--and UDim2.new(0, draggingGui.AbsolutePosition.X, 0, draggingGui.AbsolutePosition.Y)
+				--or draggingGui.Position
+
+			DragEnded:Fire({
+				InputPosition = input.Position,
+				GuiPosition = endPos,
+				ReachedExtents = reachedExtents,
+				DraggedGui = dragGui or gui,
+			})
+			if debug then
+				print("[snapdragon]", "Drag ended", input.Position)
+			end
+
+			-- Enable the ability to "reset" the position automatically.
+			-- This will be used for stuff like roact-dnd
+			local dragEndedResetsPosition = self.dragEndedResetsPosition
+			if dragEndedResetsPosition then
+				draggingGui.Position = guiStartPos
+			end
 		end
 	end)
 
