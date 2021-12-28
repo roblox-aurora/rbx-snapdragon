@@ -1,5 +1,5 @@
 <div align="center">
-	<img src="https://assets.vorlias.com/i1/snapdragon.png"/>
+	<img src="https://raw.githubusercontent.com/Vorlias/Vorlias/master/assets/snapdragon.png"/>
 
 
 </div>
