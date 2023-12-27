@@ -1,6 +1,6 @@
 {
 	"name": "@rbxts/snapdragon",
-	"version": "2.0.0-beta.1",
+	"version": "2.1.0",
 	"description": "A library that allows UI to be draggable in/and snappable to the viewport",
 	"main": "src/init.lua",
 	"keywords": [],

@@ -1,11 +1,13 @@
 local Signal = {}
 Signal.__index = Signal
 
-function Signal.new()
+function Signal.new(): Signal
 	return setmetatable({
 		Bindable = Instance.new("BindableEvent");
 	}, Signal)
 end
+
+export type Signal = typeof(Signal.new())
 
 function Signal:Connect(Callback)
 	return self.Bindable.Event:Connect(function(GetArgumentStack)
