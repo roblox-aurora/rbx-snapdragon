@@ -19,7 +19,7 @@ end
 type Snapdragon = {
 	createDragController: (gui: GuiObject, options: Types.SnapdragonOptions) -> Types.SnapdragonController,
 	SnapdragonController: Types.SnapdragonControllerType,
-	createRef: <T>(initialValue: T) -> Types.SnapdragonRef<T>,
+	createRef: (initialValue: GuiObject) -> Types.SnapdragonRef,
 	createDragAndDropContext: () -> DragAndDrop.SnapdragAndDropContext,
 }
 
