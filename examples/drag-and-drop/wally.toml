@@ -1,0 +1,12 @@
+[package]
+name = "vorlias/snapdragon-react-test"
+description = "Dragging library with snapping capabilities for Roblox UI"
+version = "2.1.0"
+license = "MIT"
+authors = ["Vorlias"]
+realm = "shared"
+registry = "https://github.com/upliftgames/wally-index"
+
+[dependencies]
+React = "roblox/react@17.3.13"
+ReactRoblox = "roblox/react-roblox@17.3.13"
