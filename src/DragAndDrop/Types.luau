@@ -5,6 +5,8 @@ export type CanDropPredicate = (targetData: unknown) -> boolean
 export type CanDragPredicate = () -> boolean
 
 export type DroppedOnTargetCallback = (sourceData: unknown, sourceGui: GuiObject) -> ()
+export type HoveredOverTargetCallback = (sourceData: unknown, sourceGui: GuiObject) -> ()
+
 export type DragEndAction = (dropped: boolean) -> ()
 
 export type DropGroupType = string | number
@@ -25,6 +27,10 @@ export type DropTarget = {
 	gui: types.SnapdragonRef,
 	dropIds: { DropGroupType },
 	onDrop: DroppedOnTargetCallback?,
+
+	onHover: HoveredOverTargetCallback?,
+	onHoverStop: HoveredOverTargetCallback?,
+
 	priority: number,
 	canDrop: CanDropPredicate?,
 	id: string,
@@ -51,6 +57,9 @@ export type DropTargetOptions = {
     CanDropOnTarget: CanDropPredicate?,
     --- The priority of this target, higher means that even if it's overlapping another target it will take precedence
     DropPriority: number?;
+	--- A valid drag object is hovering over this target
+	HoveringOverTarget: HoveredOverTargetCallback?,
+	StoppedHoveringOverTarget: HoveredOverTargetCallback?,
 }
 
 return nil

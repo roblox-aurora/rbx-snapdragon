@@ -26,19 +26,28 @@ do
 
 	local dnd = Snapdragon.createDragAndDropContext()
 	
-	local controller = dnd:RegisterDragSource(Snapdragon.createRef(windowFrame), {
+	local windowFrameRef = Snapdragon.createRef(windowFrame)
+	local controller = dnd:RegisterDragSource(windowFrameRef, {
 		DropGroup = "test",
 		Data = "I'm some data!"
 	})
 	controller:Connect()
 
+	dnd:UpdateDragSourceData(windowFrameRef, "I'm updated data now :-)")
+
 	dnd:RegisterDropTarget(Snapdragon.createRef(windowFrame2), {
 		DropGroups = { "test" },
-		DroppedOnTarget = function(data)
-			print("dropped", data)
+		DroppedOnTarget = function(data, gui)
+			print("dropped", data, gui)
 		end,
 		CanDropOnTarget = function(data)
 			return typeof(data) == "string"
+		end,
+		HoveringOverTarget = function(data, gui)
+			print("recieved hover data", data, gui)
+		end,
+		StoppedHoveringOverTarget = function(data, gui)
+			print("stopped hovering", data, gui)
 		end
 	})
 end

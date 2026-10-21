@@ -75,4 +75,6 @@ export type SnapdragonControllerType = {
     new: (gui: GuiObject, options: SnapdragonOptions) -> SnapdragonController
 }
 
+export type Set<T> = { [T]: true? }
+
 return nil

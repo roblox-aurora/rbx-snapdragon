@@ -5,6 +5,7 @@ const Snapdragon = require("../Types")
 const DragAndDrop = require("./Types")
 
 const SnapdragonController = require("../SnapdragonController")
+const Types = require("../Types")
 
 const SnapdragAndDropContext = {}
 SnapdragAndDropContext.__index = SnapdragAndDropContext
@@ -52,8 +53,12 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     }
     self.dragSources[ref] = dragSource
 
+    local targetSet: Types.Set<DragAndDrop.DropTarget> = {} 
     local originParent
+
     maid.DragBegin = controller.DragBegan:Connect(function(event) 
+        targetSet = {}
+
         if raiseAbove then
             local instance = ref:Get()
             originParent = instance.Parent
@@ -63,8 +68,28 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
         end
     end)
     
-    maid.DragChange = controller.DragChanged:Connect(function(event: Snapdragon.DragChangedEvent)
 
+    maid.DragChange = controller.DragChanged:Connect(function(event: Snapdragon.DragChangedEvent)
+        const targets = self:GetDropTargets(dragSource.gui)
+
+        for _, target in targets do
+            if targetSet[target] then continue end
+
+            if typeof(target.onHover) == "function" then
+                target.onHover(dragSource.data, dragSource.gui:Get())
+            end
+
+            targetSet[target] = true
+        end
+
+        for target in targetSet do
+            if not table.find(targets, target) then
+                targetSet[target] = nil
+                if typeof(target.onHoverStop) == "function" then
+                    target.onHoverStop(dragSource.data, dragSource.gui:Get())
+                end
+            end
+        end
     end)
 
     controller.OnDragEnd = function()
@@ -90,6 +115,8 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
         if typeof(dragSource.dragEnd) == "function" then
             dragSource.dragEnd(dropped)
         end
+
+        targetSet = {} -- clear set
     end
 
     maid.DragEnded = controller.DragEnded:Connect(function(event)
@@ -103,12 +130,26 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     return controller
 end
 
-function SnapdragAndDropContext.UnregisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef)
-    local data = self.dragSources[ref]
-    if not data then return end
+function SnapdragAndDropContext.GetDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef): DragAndDrop.DragSource?
+    return self.dragSources[ref]
+end
 
-    data.controller:Destroy()
-    data.maid:DoCleaning()
+function SnapdragAndDropContext.GetDropTarget(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef): DragAndDrop.DropTarget?
+    return self.dropTargets[ref]
+end
+
+function SnapdragAndDropContext.UpdateDragSourceData(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef, data: unknown)
+    local target = self:GetDragSource(ref)
+    if not target then return end
+    target.data = data
+end
+
+function SnapdragAndDropContext.UnregisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef)
+    local dragSource = self.dragSources[ref]
+    if not dragSource then return end
+
+    dragSource.controller:Destroy()
+    dragSource.maid:DoCleaning()
     self.dragSources[ref] = nil
 end
 
@@ -121,6 +162,8 @@ function SnapdragAndDropContext.RegisterDropTarget(self: SnapdragAndDropContext,
         onDrop = options.DroppedOnTarget,
         canDrop = options.CanDropOnTarget,
         priority = options.DropPriority or 1,
+        onHover = options.HoveringOverTarget,
+        onHoverStop = options.StoppedHoveringOverTarget,
     }
 end
 
