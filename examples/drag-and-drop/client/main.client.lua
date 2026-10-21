@@ -1,5 +1,6 @@
 --!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextService = game:GetService("TextService")
 local Snapdragon = require(ReplicatedStorage:WaitForChild("Snapdragon"))
 
 local React = require(ReplicatedStorage.Packages.React)
@@ -63,13 +64,13 @@ do
 	local e = React.createElement
 
 	local function DragFrame(props)
-		local ref = React.createRef()
+		local ref = React.useRef(nil)
 
 		React.useEffect(function() 
 			if not ref.current then return end
 			local snapdragonRef = Snapdragon.createRef(ref.current)
 			local drag = dnd:RegisterDragSource(snapdragonRef, {
-				DropGroup = "test",
+				DropGroup = props.DropGroup or "test",
 				Data = "hello, world!"
 			})
 
@@ -82,7 +83,8 @@ do
 
 		return e("Frame", {
 			ref = ref,
-			Size = UDim2.new(0, 100, 0, 100)
+			Size = UDim2.new(0, 100, 0, 100),
+			Position = props.Position
 		}, props.children)
 	end
 
@@ -114,6 +116,7 @@ do
 					setHovering(false)
 				end
 			})
+
 			return function()
 				dnd:UnregisterDropTarget(snapdragonRef)
 			end
@@ -122,7 +125,7 @@ do
 		return e("Frame", {
 			ref = ref,
 			Size = UDim2.new(0, 100, 0, 100),
-			Position = UDim2.new(0, 200, 0, 200)
+			Position = props.Position or UDim2.new(0, 200, 0, 200)
 		}, props.children, React.createElement("UIStroke", {
 			Thickness = if isHovering then 2 else 1,
 			Color = if dropped then Color3.fromRGB(0, 255, 0) else if isHovering then Color3.fromRGB(255, 255, 0) else Color3.fromRGB(0, 0, 0)
@@ -138,13 +141,32 @@ do
 	local function Test()
 		return React.createElement(
 			React.Fragment, {}, 
-			React.createElement(DragFrame),
-			React.createElement(DropFrame)
+			React.createElement(DragFrame, {}, 
+				React.createElement("TextLabel", {
+					Text = "Drag me!",
+					TextSize = 15,
+					Size = UDim2.new(1, 0, 1, 0),
+					BackgroundTransparency = 1
+				})
+			),
+			React.createElement(DropFrame, {},
+				React.createElement("TextLabel", {
+					Text = "Drop here!",
+					TextSize = 15,
+					Size = UDim2.new(1, 0, 1, 0),
+					BackgroundTransparency = 1
+				})
+			),
+			React.createElement(DragFrame, { DropGroup = "wrong", Position = UDim2.new(0, 300, 0, 300), }, 
+				React.createElement("TextLabel", {
+					Text = "No drop here",
+					TextSize = 15,
+					Size = UDim2.new(1, 0, 1, 0),
+					BackgroundTransparency = 1,
+				})
+			)
 		)
 	end
 
 	root:render(React.createElement(Test))
-
-	-- task.wait(5)
-	-- root:unmount()
 end
