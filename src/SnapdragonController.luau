@@ -13,8 +13,8 @@ SnapdragonController.__index = SnapdragonController
 
 type DragEnd = () -> ()
 type SnapdragonControllerProps = {
-	dragGui: Types.SnapdragonGuiRef,
-	gui: Types.SnapdragonGuiRef,
+	dragGui: Types.SnapdragonRef,
+	gui: Types.SnapdragonRef,
 	debug: boolean,
 	originPosition: UDim2,
 	dragEndedResetsPosition: boolean,
@@ -51,7 +51,7 @@ export type SnapdragonController = Types.SnapdragonController
 
 local controllers = setmetatable({}, { __mode = "k" }) :: { [GuiObject]: SnapdragonInternal }
 
-function SnapdragonController.new(gui: GuiObject | Types.SnapdragonGuiRef, options: Types.SnapdragonOptions): Types.SnapdragonController
+function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options: Types.SnapdragonOptions): Types.SnapdragonController
 	options = objectAssign<<Types.SnapdragonOptions>>({
 		DragGui = gui,
 		DragThreshold = 0,
@@ -71,8 +71,8 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonGuiRef, optio
 	-- Basic immutable values
 	local dragGui = options.DragGui
 
-	local guiRef = if SnapdragonRef.is(gui) then gui :: Types.SnapdragonGuiRef else SnapdragonRef.new(gui :: GuiObject)
-	local dragGuiRef = if SnapdragonRef.is(dragGui) then dragGui :: Types.SnapdragonGuiRef else SnapdragonRef.new(dragGui :: GuiObject)
+	local guiRef = if SnapdragonRef.is(gui) then gui :: Types.SnapdragonRef else SnapdragonRef.new(gui :: GuiObject)
+	local dragGuiRef = if SnapdragonRef.is(dragGui) then dragGui :: Types.SnapdragonRef else SnapdragonRef.new(dragGui :: GuiObject)
 	
 	self.gui = guiRef
 	self.dragGui = dragGuiRef

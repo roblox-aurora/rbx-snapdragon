@@ -10,8 +10,8 @@ const SnapdragAndDropContext = {}
 SnapdragAndDropContext.__index = SnapdragAndDropContext
 
 type SnapdragAndDropContextProps = {
-    dragSources: { [Snapdragon.SnapdragonGuiRef]: DragAndDrop.DragSource },
-    dropTargets: { [Snapdragon.SnapdragonGuiRef]: DragAndDrop.DropTarget },
+    dragSources: { [Snapdragon.SnapdragonRef]: DragAndDrop.DragSource },
+    dropTargets: { [Snapdragon.SnapdragonRef]: DragAndDrop.DropTarget },
 }
 
 export type SnapdragAndDropContext = setmetatable<SnapdragAndDropContextProps, typeof(SnapdragAndDropContext)>
@@ -31,7 +31,7 @@ hostGui.DisplayOrder = 1_000
 
 
 --- Registers the given snapdragon object as a draggable source
-function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonGuiRef, options: DragAndDrop.DragSourceOptions)
+function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef, options: DragAndDrop.DragSourceOptions)
     const raiseAbove = if options.RaiseAbove ~= nil then options.RaiseAbove else true
 
     const controller = SnapdragonController.new(ref, {
@@ -103,7 +103,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     return controller
 end
 
-function SnapdragAndDropContext.UnregisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonGuiRef)
+function SnapdragAndDropContext.UnregisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef)
     local data = self.dragSources[ref]
     if not data then return end
 
@@ -113,7 +113,7 @@ function SnapdragAndDropContext.UnregisterDragSource(self: SnapdragAndDropContex
 end
 
 
-function SnapdragAndDropContext.RegisterDropTarget(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonGuiRef, options: DragAndDrop.DropTargetOptions)
+function SnapdragAndDropContext.RegisterDropTarget(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef, options: DragAndDrop.DropTargetOptions)
     self.dropTargets[ref] = {
         id = game:GetService("HttpService"):GenerateGUID(false),
         dropIds = options.DropGroups,
@@ -124,7 +124,7 @@ function SnapdragAndDropContext.RegisterDropTarget(self: SnapdragAndDropContext,
     }
 end
 
-function SnapdragAndDropContext.UnregisterDropTarget(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonGuiRef)
+function SnapdragAndDropContext.UnregisterDropTarget(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef)
     local data = self.dropTargets[ref]
     if not data then return end
 
@@ -151,7 +151,7 @@ local function intersects(source: GuiObject, target: GuiObject)
 	)
 end
 
-function SnapdragAndDropContext.GetDropTargets(self: SnapdragAndDropContext, source: Snapdragon.SnapdragonGuiRef): { DragAndDrop.DropTarget }
+function SnapdragAndDropContext.GetDropTargets(self: SnapdragAndDropContext, source: Snapdragon.SnapdragonRef): { DragAndDrop.DropTarget }
     local dragSource = self.dragSources[source]
     if not dragSource then return {} end
 

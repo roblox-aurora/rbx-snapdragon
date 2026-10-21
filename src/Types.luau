@@ -5,8 +5,6 @@ export type SnapdragonRef = {
     Get: (self:  SnapdragonRef) -> GuiObject,
 }
 
-export type SnapdragonGuiRef = SnapdragonRef
-
 export type SnapdragonRefType = {
     new: <T>(initialValue: GuiObject) -> SnapdragonRef,
     is: (value: unknown) -> boolean,
