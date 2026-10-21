@@ -14,14 +14,15 @@ end
 type SnapdragonExport = {
 	createDragController: (gui: GuiObject, options: Types.SnapdragonOptions) -> Types.SnapdragonController,
 	SnapdragonController: Types.SnapdragonControllerType,
-	createRef: <T>(initialValue: T) -> Types.SnapdragonRef<T>
+	createRef: <T>(initialValue: T) -> Types.SnapdragonRef<T>,
+	VERSION: string,
 }
 
-local export: SnapdragonExport
-export = {
+local export = {
 	createDragController = createDragController, 
 	SnapdragonController = SnapdragonController :: Types.SnapdragonControllerType,
-	createRef = createRef
+	createRef = createRef,
+	VERSION = "2.2.0-beta.0"
 }
 
 -- roblox-ts `default` support

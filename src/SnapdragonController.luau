@@ -8,29 +8,6 @@ local t = require(script.Parent.t)
 local Maid = require(script.Parent.Maid)
 local Types = require("./Types")
 
--- local MarginTypeCheck = t.interface({
--- 	Vertical = t.optional(t.Vector2),
--- 	Horizontal = t.optional(t.Vector2),
--- })
-
--- local AxisEnumCheck = t.literal("XY", "X", "Y")
--- local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
--- local DragPositionModeEnumCheck = t.literal("Offset", "Scale")
-
--- local OptionsInterfaceCheck = t.interface({
--- 	DragGui = t.union(t.instanceIsA("GuiObject"), SnapdragonRef.is),
--- 	DragThreshold = t.number,
--- 	DragGridSize = t.number,
--- 	SnapMargin = MarginTypeCheck,
--- 	SnapMarginThreshold = MarginTypeCheck,
--- 	SnapAxis = AxisEnumCheck,
--- 	DragAxis = AxisEnumCheck,
--- 	DragRelativeTo = DragRelativeToEnumCheck,
--- 	SnapEnabled = t.boolean,
--- 	Debugging = t.boolean,
--- 	DragPositionMode = DragPositionModeEnumCheck,
--- })
-
 local SnapdragonController = {}
 SnapdragonController.__index = SnapdragonController
 
@@ -72,7 +49,7 @@ export type SnapdragonController = Types.SnapdragonController
 local controllers = setmetatable({}, { __mode = "k" }) :: { [GuiObject]: SnapdragonInternal }
 
 function SnapdragonController.new(gui: GuiObject | Types.SnapdragonGuiRef, options: Types.SnapdragonOptions): Types.SnapdragonController
-	options = objectAssign({
+	options = objectAssign<<Types.SnapdragonOptions>>({
 		DragGui = gui,
 		DragThreshold = 0,
 		DragGridSize = 0,
@@ -90,9 +67,12 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonGuiRef, optio
 	local self = setmetatable({}, SnapdragonController) :: SnapdragonInternal
 	-- Basic immutable values
 	local dragGui = options.DragGui
+
+	local guiRef = if SnapdragonRef.is(gui) then gui :: Types.SnapdragonGuiRef else SnapdragonRef.new(gui :: GuiObject)
+	local dragGuiRef = if SnapdragonRef.is(dragGui) then dragGui :: Types.SnapdragonGuiRef else SnapdragonRef.new(dragGui :: GuiObject)
 	
-	self.gui = if SnapdragonRef.is(gui) then gui :: Types.SnapdragonGuiRef else SnapdragonRef.new(gui :: GuiObject)
-	self.dragGui = if dragGui then dragGui else self.gui
+	self.gui = guiRef
+	self.dragGui = dragGuiRef
 
 	assert(self:GetGui():IsA("GuiObject"), "Gui should be a GuiObject")
 	assert(self:GetDragGui():IsA("GuiObject"), "DragGui should be a GuiObject")

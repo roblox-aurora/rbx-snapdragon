@@ -1,4 +1,5 @@
 *
 !*.d.ts
-!src/*.lua
-!src/**/*.lua
+!src/*.luau
+!src/**/*.luau
+!default.project.json
