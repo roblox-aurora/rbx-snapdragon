@@ -60,7 +60,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
         targetSet = {}
 
         if raiseAbove then
-            local instance = ref:Get()
+            local instance = ref.current
             originParent = instance.Parent
             hostGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 
@@ -76,7 +76,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
             if targetSet[target] then continue end
 
             if typeof(target.onHover) == "function" then
-                target.onHover(dragSource.data, dragSource.gui:Get())
+                target.onHover(dragSource.data, dragSource.gui.current)
             end
 
             targetSet[target] = true
@@ -86,7 +86,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
             if not table.find(targets, target) then
                 targetSet[target] = nil
                 if typeof(target.onHoverStop) == "function" then
-                    target.onHoverStop(dragSource.data, dragSource.gui:Get())
+                    target.onHoverStop(dragSource.data, dragSource.gui.current)
                 end
             end
         end
@@ -109,7 +109,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
         end
 
         if droppedTarget ~= nil and typeof(droppedTarget.onDrop) == "function" then
-            droppedTarget.onDrop(dragSource.data, dragSource.gui:Get())
+            droppedTarget.onDrop(dragSource.data, dragSource.gui.current)
         end
 
         if typeof(dragSource.dragEnd) == "function" then
@@ -121,7 +121,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
 
     maid.DragEnded = controller.DragEnded:Connect(function(event)
         if raiseAbove then
-            local instance = ref:Get()
+            local instance = ref.current
             instance.Parent = originParent
             hostGui.Parent = nil
         end
@@ -200,9 +200,9 @@ function SnapdragAndDropContext.GetDropTargets(self: SnapdragAndDropContext, sou
 
     local dropTargets: { DragAndDrop.DropTarget } = {}
 
-    local dragGui = source:Get()
+    local dragGui = source.current
     for k, v in self.dropTargets do
-        local dropGui = k:Get()
+        local dropGui = k.current
 
         if not table.find(v.dropIds, dragSource.dropId) then continue end -- must match group
         if not intersects(dragGui, dropGui) then continue end -- must intersect

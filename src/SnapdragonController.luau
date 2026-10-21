@@ -71,9 +71,9 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 	-- Basic immutable values
 	local dragGui = options.DragGui
 
-	local guiRef = if SnapdragonRef.is(gui) then gui :: Types.SnapdragonRef else SnapdragonRef.new(gui :: GuiObject)
-	local dragGuiRef = if SnapdragonRef.is(dragGui) then dragGui :: Types.SnapdragonRef else SnapdragonRef.new(dragGui :: GuiObject)
-	
+	local guiRef = SnapdragonRef.toRef(gui)
+	local dragGuiRef = if dragGui then SnapdragonRef.toRef(dragGui) else guiRef
+
 	self.gui = guiRef
 	self.dragGui = dragGuiRef
 
@@ -81,7 +81,7 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 	assert(self:GetDragGui():IsA("GuiObject"), "DragGui should be a GuiObject")
 
 	self.debug = options.Debugging or false
-	self.originPosition = self.dragGui:Get().Position
+	self.originPosition = self.dragGui.current.Position
 	self.canDrag = options.CanDrag
 	self.dragEndedResetsPosition = options.DragEndedResetsPosition or false
 
@@ -136,16 +136,16 @@ end
 
 function SnapdragonController.GetDragGui(self: SnapdragonInternal): GuiObject
 	local gui = self.dragGui
-	return gui:Get()
+	return gui.current
 end
 
 function SnapdragonController.GetGui(self: SnapdragonInternal): GuiObject
 	local gui = self.gui
-	return gui:Get()
+	return gui.current
 end
 
 function SnapdragonController.ResetPosition(self: SnapdragonInternal): ()
-	self.dragGui:Get().Position = self.originPosition
+	self.dragGui.current.Position = self.originPosition
 end
 
 function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal)

@@ -1,12 +1,15 @@
 local Signal = require("./Signal")
 
 export type SnapdragonRef = {
-    Update: (self: SnapdragonRef, value: GuiObject) -> (),
-    Get: (self:  SnapdragonRef) -> GuiObject,
+    read current: GuiObject, -- makes it compatible with react and roact
 }
+
+type ReactLikeRef = { current: unknown }
+type RoactLikeRef = { getValue: () -> unknown }
 
 export type SnapdragonRefType = {
     new: <T>(initialValue: GuiObject) -> SnapdragonRef,
+    toRef: (value: ReactLikeRef | RoactLikeRef | SnapdragonRef | GuiObject) -> SnapdragonRef,
     is: (value: unknown) -> boolean,
 }
 

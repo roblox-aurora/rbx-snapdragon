@@ -5,6 +5,7 @@ local Snapdragon = require(ReplicatedStorage:WaitForChild("Snapdragon"))
 
 local React = require(ReplicatedStorage.Packages.React)
 local ReactRoblox = require(ReplicatedStorage.Packages.ReactRoblox)
+local SnapdragonRef = require(ReplicatedStorage.Snapdragon.SnapdragonRef)
 
 
 -- -- Basic Example

@@ -9,9 +9,13 @@ declare interface SnapProps {
 }
 
 declare interface SnapdragonRef {
-	Update(gui: GuiObject): void;
-	Get(): GuiObject | undefined;
+	readonly current: GuiObject;
 }
+
+type ReactRefLike = { current: unknown }
+type RoactRefLike = { getValue(): unknown }
+
+declare type RefLike = SnapdragonRef | ReactRefLike | RoactRefLike
 
 declare interface SnapdragonRefConstructor {
 	new (gui?: GuiObject): SnapdragonRef;
@@ -27,7 +31,7 @@ declare interface DraggingOptions {
 	 *
 	 * Useful for things like titlebars
 	 */
-	DragGui?: GuiObject | SnapdragonRef;
+	DragGui?: GuiObject | RefLike;
 
 	/**
 	 * The amount of pixels the mouse must be held down before the dragging happens
@@ -233,7 +237,7 @@ declare interface SnapdragonConstructor {
 	 * @param dragSnapOptions The snap options
 	 */
 	new (
-		gui: GuiObject | SnapdragonRef,
+		gui: GuiObject | RefLike,
 		options?: SnapdragonOptions,
 	): SnapdragonController;
 }
@@ -256,13 +260,43 @@ declare function createRef(gui?: GuiObject): SnapdragonRef;
  * @param dragSnapOptions The snap options
  */
 declare function createDragController(
-	gui: GuiObject | SnapdragonRef,
+	gui: GuiObject | RefLike,
 	options?: SnapdragonOptions,
 ): SnapdragonController;
+
+
+declare type DropIdType = string | number;
+
+declare interface DragSource {
+	readonly gui: SnapdragonRef;
+	readonly dropId: DropIdType;
+	readonly data: unknown;
+}
+
+declare interface DropTarget {
+	readonly gui: SnapdragonRef;
+	readonly dropIds: readonly DropIdType[];
+}
+
+declare interface DragSourceOptions {}
+declare interface DropTargetOptions {}
+
+declare interface SnapdragonDnDContext {
+	RegisterDragSource(ref: RefLike, options: DragSourceOptions): SnapdragonController;
+	RegisterDropTarget(ref: RefLike, options: DropTargetOptions): void;
+
+	UnregisterDragSource(ref: SnapdragonRef): void;
+	UnregisterDropTarget(ref: SnapdragonRef): void;
+
+	GetDragSource(ref: SnapdragonRef): DragSource | undefined;
+	GetDropTarget(ref: SnapdragonRef): DropTarget | undefined;
+}
+declare function createDragAndDropContext(): SnapdragonDnDContext;
 
 export as namespace Snapdragon;
 export {
 	createDragController,
+	createDragAndDropContext,
 	SnapProps,
 	SnapMargin,
 	SnapdragonOptions,
