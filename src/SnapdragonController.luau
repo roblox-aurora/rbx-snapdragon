@@ -1,3 +1,4 @@
+--!strict
 local UserInputService = game:GetService("UserInputService")
 
 local objectAssign = require(script.Parent.objectAssign)
@@ -5,54 +6,72 @@ local Signal = require(script.Parent.Signal)
 local SnapdragonRef = require(script.Parent.SnapdragonRef)
 local t = require(script.Parent.t)
 local Maid = require(script.Parent.Maid)
+local Types = require("./Types")
 
-local MarginTypeCheck = t.interface({
-	Vertical = t.optional(t.Vector2),
-	Horizontal = t.optional(t.Vector2),
-})
+-- local MarginTypeCheck = t.interface({
+-- 	Vertical = t.optional(t.Vector2),
+-- 	Horizontal = t.optional(t.Vector2),
+-- })
 
-type MarginType = { Vertical: Vector2?, Horizontal: Vector2? }
+-- local AxisEnumCheck = t.literal("XY", "X", "Y")
+-- local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
+-- local DragPositionModeEnumCheck = t.literal("Offset", "Scale")
 
-local AxisEnumCheck = t.literal("XY", "X", "Y")
-local DragRelativeToEnumCheck = t.literal("LayerCollector", "Parent")
-local DragPositionModeEnumCheck = t.literal("Offset", "Scale")
-
-export type SnapdragonOptions = {
-	DragGui: GuiObject?,
-	DragThreshold: number?,
-	DragGridSize: number?,
-	SnapMargin: MarginType?,
-	SnapMarginThreshold: MarginType?,
-	SnapAxis: ("XY" | "X" | "Y")?,
-	DragAxis: ("XY" | "X" | "Y")?,
-	DragRelativeTo: "LayerCollector" | "Parent",
-	SnapEnabled: boolean?,
-	Debugging: boolean?,
-	DragPositionMode: ("Offset" | "Scale")?,
-	CanDrag: (() -> boolean) | nil,
-	DragEndedResetsPosition: boolean?,
-}
-
-local OptionsInterfaceCheck = t.interface({
-	DragGui = t.union(t.instanceIsA("GuiObject"), SnapdragonRef.is),
-	DragThreshold = t.number,
-	DragGridSize = t.number,
-	SnapMargin = MarginTypeCheck,
-	SnapMarginThreshold = MarginTypeCheck,
-	SnapAxis = AxisEnumCheck,
-	DragAxis = AxisEnumCheck,
-	DragRelativeTo = DragRelativeToEnumCheck,
-	SnapEnabled = t.boolean,
-	Debugging = t.boolean,
-	DragPositionMode = DragPositionModeEnumCheck,
-})
+-- local OptionsInterfaceCheck = t.interface({
+-- 	DragGui = t.union(t.instanceIsA("GuiObject"), SnapdragonRef.is),
+-- 	DragThreshold = t.number,
+-- 	DragGridSize = t.number,
+-- 	SnapMargin = MarginTypeCheck,
+-- 	SnapMarginThreshold = MarginTypeCheck,
+-- 	SnapAxis = AxisEnumCheck,
+-- 	DragAxis = AxisEnumCheck,
+-- 	DragRelativeTo = DragRelativeToEnumCheck,
+-- 	SnapEnabled = t.boolean,
+-- 	Debugging = t.boolean,
+-- 	DragPositionMode = DragPositionModeEnumCheck,
+-- })
 
 local SnapdragonController = {}
 SnapdragonController.__index = SnapdragonController
 
-local controllers = setmetatable({}, { __mode = "k" })
+type SnapdragonControllerProps = {
+	dragGui: Types.SnapdragonGuiRef,
+	gui: Types.SnapdragonGuiRef,
+	debug: boolean,
+	originPosition: UDim2,
+	dragEndedResetsPosition: boolean,
+	snapEnabled: boolean,
+	snapAxis: Types.SnapdragonAxis?,
+	dragAxis: Types.SnapdragonAxis?,
+	dragThreshold: number?,
+	dragRelativeTo: Types.SnapdragonRelativeTo,
+	canDrag: Types.DragPredicate?,
+	dragGridSize: number,
+	dragPositionMode: Types.DragPositionMode?,
 
-function SnapdragonController.new(gui: GuiObject, options: SnapdragonOptions): SnapdragonController
+	_useAbsoluteCoordinates: boolean,
+
+	DragEnded: Signal.Signal,
+	DragBegan: Signal.Signal,
+	DragChanged: Signal.Signal,
+
+	maid: Maid.Maid,
+
+	snapVerticalMargin: Vector2,
+	snapHorizontalMargin: Vector2,
+
+	snapThresholdVertical: Vector2,
+	snapThresholdHorizontal: Vector2,
+
+	locked: boolean,
+}
+
+type SnapdragonInternal = setmetatable<SnapdragonControllerProps, typeof(SnapdragonController)>
+export type SnapdragonController = Types.SnapdragonController
+
+local controllers = setmetatable({}, { __mode = "k" }) :: { [GuiObject]: SnapdragonInternal }
+
+function SnapdragonController.new(gui: GuiObject | Types.SnapdragonGuiRef, options: Types.SnapdragonOptions): Types.SnapdragonController
 	options = objectAssign({
 		DragGui = gui,
 		DragThreshold = 0,
@@ -66,27 +85,30 @@ function SnapdragonController.new(gui: GuiObject, options: SnapdragonOptions): S
 		Debugging = false,
 		DragRelativeTo = "LayerCollector",
 		DragPositionMode = "Scale",
-	}, options) :: SnapdragonOptions
+	}, options) :: Types.SnapdragonOptions
 
-	assert(OptionsInterfaceCheck(options))
-
-	local self = setmetatable({}, SnapdragonController)
+	local self = setmetatable({}, SnapdragonController) :: SnapdragonInternal
 	-- Basic immutable values
 	local dragGui = options.DragGui
-	self.dragGui = dragGui
-	self.gui = gui
-	self.debug = options.Debugging
-	self.originPosition = dragGui.Position
-	self.canDrag = options.CanDrag
-	self.dragEndedResetsPosition = options.DragEndedResetsPosition
+	
+	self.gui = if SnapdragonRef.is(gui) then gui :: Types.SnapdragonGuiRef else SnapdragonRef.new(gui :: GuiObject)
+	self.dragGui = if dragGui then dragGui else self.gui
 
-	self.snapEnabled = options.SnapEnabled
+	assert(self:GetGui():IsA("GuiObject"), "Gui should be a GuiObject")
+	assert(self:GetDragGui():IsA("GuiObject"), "DragGui should be a GuiObject")
+
+	self.debug = options.Debugging or false
+	self.originPosition = self.dragGui:Get().Position
+	self.canDrag = options.CanDrag
+	self.dragEndedResetsPosition = options.DragEndedResetsPosition or false
+
+	self.snapEnabled = options.SnapEnabled or false
 	self.snapAxis = options.SnapAxis
 
 	self.dragAxis = options.DragAxis
 	self.dragThreshold = options.DragThreshold
 	self.dragRelativeTo = options.DragRelativeTo
-	self.dragGridSize = options.DragGridSize
+	self.dragGridSize = options.DragGridSize or 0
 	self.dragPositionMode = options.DragPositionMode
 
 	-- Internal stuff
@@ -102,64 +124,53 @@ function SnapdragonController.new(gui: GuiObject, options: SnapdragonOptions): S
 
 	-- Advanced stuff
 	self.maid = Maid.new()
-	self:SetSnapEnabled(options.SnapEnabled)
-	self:SetSnapMargin(options.SnapMargin)
-	self:SetSnapThreshold(options.SnapMarginThreshold)
+	self:SetSnapEnabled(options.SnapEnabled or false)
+	self:SetSnapMargin(options.SnapMargin or {})
+	self:SetSnapThreshold(options.SnapMarginThreshold or {})
 
-	return self
+	return self :: SnapdragonController
 end
 
-export type SnapdragonController = typeof(SnapdragonController.new(Instance.new("TextLabel"), {} :: SnapdragonOptions))
-
-function SnapdragonController:SetSnapEnabled(snapEnabled: boolean)
+function SnapdragonController.SetSnapEnabled(self: SnapdragonInternal, snapEnabled: boolean)
 	assert(t.boolean(snapEnabled))
 	self.snapEnabled = snapEnabled
 end
 
-function SnapdragonController:SetSnapMargin(snapMargin: MarginType)
-	assert(MarginTypeCheck(snapMargin))
+function SnapdragonController.SetSnapMargin(self: SnapdragonInternal, snapMargin: Types.SnapdragonMargins)
+	-- assert(MarginTypeCheck(snapMargin))
 	local snapVerticalMargin = snapMargin.Vertical or Vector2.new()
 	local snapHorizontalMargin = snapMargin.Horizontal or Vector2.new()
 	self.snapVerticalMargin = snapVerticalMargin
 	self.snapHorizontalMargin = snapHorizontalMargin
 end
 
-function SnapdragonController:SetSnapThreshold(snapThreshold: MarginType)
-	assert(MarginTypeCheck(snapThreshold))
+function SnapdragonController.SetSnapThreshold(self: SnapdragonInternal, snapThreshold: Types.SnapdragonMargins)
 	local snapThresholdVertical = snapThreshold.Vertical or Vector2.new()
 	local snapThresholdHorizontal = snapThreshold.Horizontal or Vector2.new()
 	self.snapThresholdVertical = snapThresholdVertical
 	self.snapThresholdHorizontal = snapThresholdHorizontal
 end
 
-function SnapdragonController:GetDragGui(): (GuiObject, GuiObject)
+function SnapdragonController.GetDragGui(self: SnapdragonInternal): GuiObject
 	local gui = self.dragGui
-	if SnapdragonRef.is(gui) then
-		return gui:Get(), gui
-	else
-		return gui, gui
-	end
+	return gui:Get()
 end
 
-function SnapdragonController:GetGui(): GuiObject
+function SnapdragonController.GetGui(self: SnapdragonInternal): GuiObject
 	local gui = self.gui
-	if SnapdragonRef.is(gui) then
-		return gui:Get()
-	else
-		return gui
-	end
+	return gui:Get()
 end
 
-function SnapdragonController:ResetPosition(): ()
-	self.dragGui.Position = self.originPosition
+function SnapdragonController.ResetPosition(self: SnapdragonInternal): ()
+	self.dragGui:Get().Position = self.originPosition
 end
 
-function SnapdragonController:__bindControllerBehaviour()
+function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal)
 	local maid = self.maid
 	local debug = self.debug
 
-	local gui = self:GetGui()
-	local dragGui = self:GetDragGui()
+	local gui = self:GetGui() :: GuiObject
+	local dragGui = self:GetDragGui() :: (GuiObject)
 	local snap = self.snapEnabled
 	local DragEnded = self.DragEnded
 	local DragBegan = self.DragBegan
@@ -207,6 +218,7 @@ function SnapdragonController:__bindControllerBehaviour()
 		if host and dragRelativeTo == "LayerCollector" then
 			screenSize = host.AbsoluteSize
 		elseif dragRelativeTo == "Parent" then
+			assert(gui.Parent)
 			assert(gui.Parent:IsA("GuiObject"), "DragRelativeTo is set to Parent, but the parent is not a GuiObject!")
 			screenSize = gui.Parent.AbsoluteSize
 		end
@@ -383,12 +395,12 @@ function SnapdragonController:__bindControllerBehaviour()
 	end)
 end
 
-function SnapdragonController:Connect(): SnapdragonController
+function SnapdragonController.Connect(self: SnapdragonInternal): SnapdragonInternal
 	if self.locked then
 		error("[SnapdragonController] Cannot connect locked controller!", 2)
 	end
 
-	local _, ref = self:GetDragGui()
+	local ref = self:GetDragGui()
 
 	if not controllers[ref] or controllers[ref] == self then
 		controllers[ref] = self
@@ -399,12 +411,12 @@ function SnapdragonController:Connect(): SnapdragonController
 	return self
 end
 
-function SnapdragonController:Disconnect(): ()
+function SnapdragonController.Disconnect(self: SnapdragonInternal): ()
 	if self.locked then
 		error("[SnapdragonController] Cannot disconnect locked controller!", 2)
 	end
 
-	local _, ref = self:GetDragGui()
+	local ref = self:GetDragGui()
 
 	local controller = controllers[ref]
 	if controller then
@@ -413,12 +425,12 @@ function SnapdragonController:Disconnect(): ()
 	end
 end
 
-function SnapdragonController:Destroy(): ()
+function SnapdragonController.Destroy(self: SnapdragonInternal): ()
 	self:Disconnect()
 	self.DragEnded:Destroy()
 	self.DragBegan:Destroy()
-	self.DragEnded = nil
-	self.DragBegan = nil
+	self.DragEnded = nil :: any
+	self.DragBegan = nil :: any
 	self.locked = true
 end
 

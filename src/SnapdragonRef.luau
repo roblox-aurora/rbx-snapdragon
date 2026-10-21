@@ -1,4 +1,5 @@
 local refs = setmetatable({}, {__mode = "k"})
+local types = require("./Types")
 
 local SnapdragonRef = {}
 SnapdragonRef.__index = SnapdragonRef
@@ -23,4 +24,4 @@ function SnapdragonRef.is(ref)
 	return refs[ref] ~= nil
 end
 
-return SnapdragonRef
+return SnapdragonRef :: types.SnapdragonRefType
