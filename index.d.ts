@@ -9,7 +9,7 @@ declare interface SnapProps {
 }
 
 declare interface SnapdragonRef {
-	readonly current: GuiObject;
+	current: GuiObject;
 }
 
 type ReactRefLike = { current: unknown }
@@ -301,5 +301,6 @@ export {
 	SnapMargin,
 	SnapdragonOptions,
 	SnapdragonController,
+	SnapdragonDnDContext,
 	createRef,
 };
