@@ -11,6 +11,7 @@ local Types = require("./Types")
 local SnapdragonController = {}
 SnapdragonController.__index = SnapdragonController
 
+type DragEnd = () -> ()
 type SnapdragonControllerProps = {
 	dragGui: Types.SnapdragonGuiRef,
 	gui: Types.SnapdragonGuiRef,
@@ -28,9 +29,11 @@ type SnapdragonControllerProps = {
 
 	_useAbsoluteCoordinates: boolean,
 
-	DragEnded: Signal.Signal,
-	DragBegan: Signal.Signal,
-	DragChanged: Signal.Signal,
+	DragEnded: Signal.Signal1<Types.DragEndedEvent>,
+	DragBegan: Signal.Signal1<Types.DragBeganEvent>,
+	DragChanged: Signal.Signal1<Types.DragChangedEvent>,
+	
+	OnDragEnd: Types.DragEndCallback?,
 
 	maid: Maid.Maid,
 
@@ -98,9 +101,9 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonGuiRef, optio
 	local DragEnded = Signal.new()
 	local DragChanged = Signal.new()
 	local DragBegan = Signal.new()
-	self.DragEnded = DragEnded :: Signal.Signal
-	self.DragBegan = DragBegan :: Signal.Signal
-	self.DragChanged = DragChanged :: Signal.Signal
+	self.DragEnded = DragEnded :: Signal.Signal1<Types.DragEndedEvent>
+	self.DragBegan = DragBegan :: Signal.Signal1<Types.DragBeganEvent>
+	self.DragChanged = DragChanged :: Signal.Signal1<Types.DragChangedEvent>
 
 	-- Advanced stuff
 	self.maid = Maid.new()
@@ -336,9 +339,7 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 			dragging = false
 
 			local draggingGui = (dragGui or gui)
-			local endPos = draggingGui.Position --useAbsoluteCoordinates
-			--and UDim2.new(0, draggingGui.AbsolutePosition.X, 0, draggingGui.AbsolutePosition.Y)
-			--or draggingGui.Position
+			local endPos = draggingGui.Position
 
 			DragEnded:Fire({
 				InputPosition = input.Position,
@@ -346,6 +347,11 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 				ReachedExtents = reachedExtents,
 				DraggedGui = dragGui or gui,
 			})
+
+			if typeof(self.OnDragEnd) == "function" then
+				self.OnDragEnd()
+			end
+
 			if debug then
 				print("[snapdragon]", "Drag ended", input.Position)
 			end

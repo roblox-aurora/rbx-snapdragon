@@ -1,7 +1,8 @@
 {
     "js/ts.tsdk.path": "node_modules/typescript/lib",
     "luau-lsp.fflags.enableNewSolver": true,
-    "luau-lsp.types.robloxSecurityLevel": "None",
+    "luau-lsp.types.robloxSecurityLevel": "PluginSecurity",
     "luau-lsp.completion.imports.requireStyle": "alwaysRelative",
     "luau-lsp.completion.imports.stringRequires.enabled": true,
+    "luau-lsp.completion.imports.useConst": true,
 }

@@ -1,12 +1,14 @@
-export type SnapdragonRef<T> = {
-    Update: (self: SnapdragonRef<T>, value: T) -> (),
-    Get: (self:  SnapdragonRef<T>) -> T,
+local Signal = require("./Signal")
+
+export type SnapdragonRef = {
+    Update: (self: SnapdragonRef, value: GuiObject) -> (),
+    Get: (self:  SnapdragonRef) -> GuiObject,
 }
 
-export type SnapdragonGuiRef = SnapdragonRef<GuiObject>
+export type SnapdragonGuiRef = SnapdragonRef
 
 export type SnapdragonRefType = {
-    new: <T>(initialValue: T) -> SnapdragonRef<T>,
+    new: <T>(initialValue: GuiObject) -> SnapdragonRef,
     is: (value: unknown) -> boolean,
 }
 
@@ -16,10 +18,12 @@ export type SnapdragonMargins = { Vertical: Vector2?, Horizontal: Vector2? }
 export type SnapdragonAxis = "X" | "XY" | "Y"
 export type SnapdragonRelativeTo = "LayerCollector" | "Parent"
 export type DragPositionMode = "Offset" | "Scale"
+
+export type DragEndCallback = () -> ()
 export type DragPredicate = () -> boolean
 
 export type SnapdragonOptions = {
-	DragGui: (GuiObject | SnapdragonRef<GuiObject>)?,
+	DragGui: (GuiObject | SnapdragonRef)?,
 	DragThreshold: number?,
 	DragGridSize: number?,
 	SnapMargin: SnapdragonMargins?,
@@ -34,6 +38,25 @@ export type SnapdragonOptions = {
 	DragEndedResetsPosition: boolean?,
 }
 
+export type DragBeganEvent = {
+    AbsolutePosition: Vector2,
+    InputPosition: Vector3,
+    GuiPosition: UDim2,
+}
+
+export type DragChangedEvent = {
+    GuiPosition: UDim2,
+    SnapAxis: SnapdragonAxis?,
+    DragPositionMode: DragPositionMode?,
+}
+
+export type DragEndedEvent = {
+    InputPosition: Vector3,
+    GuiPosition: UDim2,
+    ReachedExtents: nil,
+    DraggedGui: GuiObject,
+}
+
 export type SnapdragonController = {
     SetSnapEnabled: (self: SnapdragonController, snapEnabled: boolean) -> (),
     SetSnapMargin: (self: SnapdragonController, margin: SnapdragonMargins) -> (),
@@ -42,7 +65,13 @@ export type SnapdragonController = {
     GetGui: (self: SnapdragonController) -> GuiObject,
     Connect: (self: SnapdragonController) -> SnapdragonController,
     Disconnect: (self: SnapdragonController) -> (),
-    Destroy: (self: SnapdragonController) -> ()
+    Destroy: (self: SnapdragonController) -> (),
+
+    DragBegan: Signal.Signal1<DragBeganEvent>,
+    DragChanged: Signal.Signal1<DragChangedEvent>,
+    DragEnded: Signal.Signal1<DragEndedEvent>,
+
+    OnDragEnd: DragEndCallback?,
 }
 export type SnapdragonControllerType = {
     new: (gui: GuiObject, options: SnapdragonOptions) -> SnapdragonController

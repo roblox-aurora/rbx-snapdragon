@@ -5,6 +5,8 @@ local SnapdragonRef = {}
 SnapdragonRef.__index = SnapdragonRef
 
 function SnapdragonRef.new(current)
+	assert(typeof(current) == "Instance" and current:IsA("GuiObject"), "Snapdragon references can only be GuiObjects")
+
 	local ref = setmetatable({
 		current = current
 	}, SnapdragonRef)

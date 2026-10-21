@@ -2,29 +2,34 @@
 local SnapdragonController = require("@self/SnapdragonController")
 local SnapdragonRef = require("@self/SnapdragonRef")
 local Types = require("@self/Types")
+local DragAndDrop = require("@self/DragAndDrop/DragAndDropContext")
 
 local function createDragController(gui: GuiObject, options: Types.SnapdragonOptions)
 	return SnapdragonController.new(gui, options) :: Types.SnapdragonController
+end
+
+local function createDragAndDropContext()
+	return DragAndDrop.new()
 end
 
 local function createRef(gui)
 	return SnapdragonRef.new(gui)
 end
 
-type SnapdragonExport = {
+type Snapdragon = {
 	createDragController: (gui: GuiObject, options: Types.SnapdragonOptions) -> Types.SnapdragonController,
 	SnapdragonController: Types.SnapdragonControllerType,
 	createRef: <T>(initialValue: T) -> Types.SnapdragonRef<T>,
-	VERSION: string,
+	createDragAndDropContext: () -> DragAndDrop.SnapdragAndDropContext,
 }
 
-local export = {
+local Snapdragon = {
 	createDragController = createDragController, 
+	createDragAndDropContext = createDragAndDropContext,
 	SnapdragonController = SnapdragonController :: Types.SnapdragonControllerType,
 	createRef = createRef,
-	VERSION = "2.2.0-beta.0"
 }
 
 -- roblox-ts `default` support
-export.default = export
-return export :: SnapdragonExport
+Snapdragon.default = Snapdragon
+return Snapdragon :: Snapdragon
