@@ -249,17 +249,17 @@ declare function createRef(gui?: GuiObject): SnapdragonRef;
  */
 declare function createDragController(gui: GuiObject | RefLike, options?: SnapdragonOptions): SnapdragonController;
 
-declare type DropIdType = string | number;
+declare type DragGroupType = string | number;
 
 declare interface DragSource {
 	readonly gui: SnapdragonRef;
-	readonly dropId: DropIdType;
+	readonly dropId: DragGroupType;
 	readonly data: unknown;
 }
 
 declare interface DropTarget {
 	readonly gui: SnapdragonRef;
-	readonly dropIds: readonly DropIdType[];
+	readonly dropIds: readonly DragGroupType[];
 }
 
 declare type CanDropPredicate = (targetData: unknown) => void;
@@ -269,22 +269,56 @@ declare type DroppedOnTargetCallback = (sourceData: unknown, sourceGui: GuiObjec
 declare type HoveredOverTargetCallback = (sourceData: unknown, sourceGui: GuiObject) => void;
 
 declare interface DragSourceOptions {
-	DropGroup: DropIdType;
-	Data: unknown;
-	CanDragSource?: CanDragPredicate;
-	RaiseAbove?: boolean;
+	/**
+	 * The group this source belongs to
+	 */
+	readonly DropGroup: DragGroupType;
+	/**
+	 * The data that will be given to any drop targets that are valid
+	 */
+	readonly Data: unknown;
+	/**
+	 * A predicate to check if this source can be dragged
+	 */
+	readonly CanDragSource?: CanDragPredicate;
+	/**
+	 * Raise this drag source above everything else when dragged - defaults to `true`
+	 */
+	readonly RaiseAbove?: boolean;
+	/**
+	 * Override snapdragon options for the drag source
+	 */
+	readonly ControllerOptions?: Partial<SnapdragonOptions>,
 }
 
 declare interface DropTargetOptions {
-	DropGroups: DropIdType[];
-	DroppedOnTarget?: DroppedOnTargetCallback;
-	CanDropOnTarget?: CanDropPredicate;
-	DropPriority?: number;
-	HoveringOverTarget?: HoveredOverTargetCallback;
-	StoppedHoveringOverTarget?: HoveredOverTargetCallback;
+	/**
+	 * Drop groups accepted by this drop target
+	 */
+	readonly DropGroups: DragGroupType[];
+	/**
+	 * A function invoked when a source is dropped on this target
+	 */
+	readonly DroppedOnTarget?: DroppedOnTargetCallback;
+	/**
+	 * A predicate to determine if it's valid to drop on this target
+	 */
+	readonly CanDropOnTarget?: CanDropPredicate;
+	/**
+	 * The priority of this target, higher means that even if it's overlapping another target it will take precedence
+	 */
+	readonly DropPriority?: number;
+	/**
+	 * A valid drag object is hovering over this target
+	 */
+	readonly HoveringOverTarget?: HoveredOverTargetCallback;
+	/**
+	 * A valid drag object has stopped hovering over this target
+	 */
+	readonly StoppedHoveringOverTarget?: HoveredOverTargetCallback;
 }
 
-declare interface SnapdragonDnDContext {
+declare interface SnapdragonDnDContext<TData = unknown> {
 	RegisterDragSource(ref: RefLike, options: DragSourceOptions): SnapdragonController;
 	RegisterDropTarget(ref: RefLike, options: DropTargetOptions): void;
 
@@ -294,7 +328,7 @@ declare interface SnapdragonDnDContext {
 	GetDragSource(ref: SnapdragonRef): DragSource | undefined;
 	GetDropTarget(ref: SnapdragonRef): DropTarget | undefined;
 }
-declare function createDragAndDropContext(): SnapdragonDnDContext;
+declare function createDragAndDropContext<T = unknown>(): SnapdragonDnDContext<T>;
 
 export as namespace Snapdragon;
 export {

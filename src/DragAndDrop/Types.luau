@@ -1,5 +1,6 @@
 local types = require("../Types")
 local maid = require("../Maid")
+const Types = require("../Types")
 
 export type CanDropPredicate = (targetData: unknown) -> boolean
 export type CanDragPredicate = () -> boolean
@@ -36,7 +37,6 @@ export type DropTarget = {
 	id: string,
 }
 
-
 export type DragSourceOptions = {
     --- The group this source belongs to
     DropGroup: DropGroupType,
@@ -46,6 +46,8 @@ export type DragSourceOptions = {
     CanDragSource: CanDragPredicate?,
     --- Raise this drag source above everything else when dragged - defaults to `true`
     RaiseAbove: boolean?,
+	-- Options to pass to the controller
+	ControllerOptions: Types.Partial<Types.SnapdragonOptions>?,
 }
 
 export type DropTargetOptions = {
@@ -59,6 +61,7 @@ export type DropTargetOptions = {
     DropPriority: number?;
 	--- A valid drag object is hovering over this target
 	HoveringOverTarget: HoveredOverTargetCallback?,
+	--  A valid drag object has stopped hovering over this target
 	StoppedHoveringOverTarget: HoveredOverTargetCallback?,
 }
 

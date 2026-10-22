@@ -23,14 +23,11 @@ SnapdragonRef.__debug = refs
 
 function SnapdragonRef.toRef(value)
 	if typeof(value) == "Instance" then
-		print("creating ref from instance")
 		return SnapdragonRef.new(value)
 	else
 		if SnapdragonRef.is(value) then
-			print("using snapdragon ref")
 			return value
 		elseif typeof(value) == "table" and value.current ~= nil then
-			print("creating ref from another ref type")
 			return SnapdragonRef.new(value.current)
 		else
 			error("Cannot convert value to snapdragon ref", 2)

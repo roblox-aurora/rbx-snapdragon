@@ -173,6 +173,7 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 	local dragStart: Vector3
 	local startPos: UDim2
 	local guiStartPos: UDim2
+	local startAbsPos: Vector2
 	local anchor = gui.AnchorPoint
 
 	local function update(position: Vector3)
@@ -255,6 +256,21 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 				DragChanged:Fire({
 					GuiPosition = newPosition,
 				})
+			elseif dragPositionMode == "AbsoluteOffset" then
+				local newPosition = UDim2.new(
+					0,
+					resultingOffsetX,
+					0,
+					resultingOffsetY
+				)
+
+				gui.Position = newPosition
+
+				DragChanged:Fire({
+					SnapAxis = snapAxis,
+					GuiPosition = newPosition,
+					DragPositionMode = dragPositionMode,
+				})
 			else
 				local newPosition = UDim2.new(
 					startPos.X.Scale + (resultingOffsetX / screenSize.X),
@@ -279,13 +295,25 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 				)
 			end
 
-			local newPosition =
-				UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-			gui.Position = newPosition
+			if dragPositionMode == "AbsoluteOffset" then
+				local newPosition =
+					UDim2.new(0, startAbsPos.X + delta.X, 0, startAbsPos.Y + delta.Y)
+				gui.Position = newPosition
 
-			DragChanged:Fire({
-				GuiPosition = newPosition,
-			})
+
+				DragChanged:Fire({
+					GuiPosition = newPosition,
+				})	
+			else
+				local newPosition =
+					UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+				gui.Position = newPosition
+
+
+				DragChanged:Fire({
+					GuiPosition = newPosition,
+				})
+			end
 		end
 	end
 
@@ -301,16 +329,29 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 		then
 			dragging = true
 			dragStart = input.Position
+
 			local draggingGui = (dragGui or gui)
 			startPos = useAbsoluteCoordinates
 					and UDim2.new(0, draggingGui.AbsolutePosition.X, 0, draggingGui.AbsolutePosition.Y)
 				or draggingGui.Position
+
+			startAbsPos = draggingGui.AbsolutePosition
 			guiStartPos = draggingGui.Position
+
+			if dragPositionMode == "AbsoluteOffset" then
+				local newPosition =
+					UDim2.new(0, startAbsPos.X, 0, startAbsPos.Y)
+				gui.Position = newPosition
+			end
+
 			DragBegan:Fire({
 				AbsolutePosition = (dragGui or gui).AbsolutePosition,
 				InputPosition = dragStart,
 				GuiPosition = startPos,
 			})
+
+
+
 			if debug then
 				print("[snapdragon]", "Drag began", input.Position)
 			end

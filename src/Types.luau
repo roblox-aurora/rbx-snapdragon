@@ -18,7 +18,45 @@ export type SnapdragonMargins = { Vertical: Vector2?, Horizontal: Vector2? }
 
 export type SnapdragonAxis = "X" | "XY" | "Y"
 export type SnapdragonRelativeTo = "LayerCollector" | "Parent"
-export type DragPositionMode = "Offset" | "Scale"
+export type DragPositionMode = "Offset" | "Scale" | "AbsoluteOffset"
+
+export type function Partial(object: type)
+	local tag = object.tag
+
+	if tag == "union" or tag == "intersection" then
+		local result
+
+		for _, component in object:components() do
+			if component.tag == "nil" then
+				continue
+			end
+			if result == nil then
+				result = component
+				continue
+			end
+
+			result = types.unionof(result, component)
+		end
+
+		return types.optional(result :: type)
+	elseif tag == "table" then
+		local result = types.newtable()
+
+		for key, prop in object:properties() do
+			local partialRead = Partial(prop.read)
+			if prop.read ~= prop.write then
+				result:setreadproperty(key, partialRead)
+				result:setwriteproperty(key, prop.write)
+			else
+				result:setproperty(key, partialRead)
+			end
+		end
+
+		return result
+	end
+
+	return types.optional(object)
+end
 
 export type DragEndCallback = () -> ()
 export type DragPredicate = () -> boolean

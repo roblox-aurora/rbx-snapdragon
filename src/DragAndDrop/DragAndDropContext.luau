@@ -29,18 +29,32 @@ end
 local hostGui = Instance.new("ScreenGui")
 hostGui.DisplayOrder = 1_000
 
+local function assignConfig(config: Types.SnapdragonOptions, addendum: Types.Partial<Types.SnapdragonOptions>?): Types.SnapdragonOptions
+    if addendum == nil then
+        return config
+    end
 
+    local merged = table.clone(config) :: {[string]: any }
+    for k, v in addendum :: {[string]: any }  do
+        merged[k] = v
+    end
+
+    return merged :: Types.SnapdragonOptions
+end
 
 --- Registers the given snapdragon object as a draggable source
 function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef, options: DragAndDrop.DragSourceOptions)
     const raiseAbove = if options.RaiseAbove ~= nil then options.RaiseAbove else true
 
-    const controller = SnapdragonController.new(ref, {
+    local mergedConfig = assignConfig({
         DragRelativeTo = "LayerCollector",
         DragEndedResetsPosition = true,
         CanDrag = options.CanDragSource,
-    })
+        DragPositionMode = if raiseAbove then "AbsoluteOffset" else "Offset",
+        SnapEnabled = false
+    }, options.ControllerOptions)
 
+    const controller = SnapdragonController.new(ref, mergedConfig)
     const maid = Maid.new()
 
     local dragSource: DragAndDrop.DragSource = {
@@ -54,17 +68,23 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     self.dragSources[ref] = dragSource
 
     local targetSet: Types.Set<DragAndDrop.DropTarget> = {} 
-    local originParent
+
+    local originParent: Instance?
+    local originSize: UDim2
+
+    local localPlayer = game:GetService("Players").LocalPlayer
 
     maid.DragBegin = controller.DragBegan:Connect(function(event) 
         targetSet = {}
 
-        if raiseAbove then
+        if raiseAbove and localPlayer then
             local instance = ref.current
             originParent = instance.Parent
-            hostGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+            originSize = instance.Size
 
+            instance.Size = UDim2.new(0, instance.AbsoluteSize.X, 0, instance.AbsoluteSize.Y)
             instance.Parent = hostGui
+            hostGui.Parent = localPlayer:WaitForChild("PlayerGui")
         end
     end)
     
@@ -120,9 +140,10 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     end
 
     maid.DragEnded = controller.DragEnded:Connect(function(event)
-        if raiseAbove then
+        if raiseAbove and localPlayer then
             local instance = ref.current
             instance.Parent = originParent
+            instance.Size = originSize
             hostGui.Parent = nil
         end
     end)
