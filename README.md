@@ -71,7 +71,7 @@ local function WindowWithDraggableTitle(props)
         return function()
             controller:Destroy()
         end
-    end)
+    end, { winodwRef, titlebarRef })
 
     return React.createElement("Frame", {
             ref = windowRef,
