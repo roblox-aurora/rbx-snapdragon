@@ -30,8 +30,19 @@ controller:Connect() -- Attaches the controller to the gui you specify
 controller:Disconnect() -- Will disconnect the drag controller from the Gui
 ```
 
-# Drag and Drop
-Work in progress feature to be UI library agnostic. This will allow you to set certain GUIs as drag sources, and others as "drop targets"
+# Drag and Drop (Experimental)
+Snapdragon has a drag & drop feature for making UI that is interactive.
+
+There are two components to the drag and drop feature:
+- Drag Sources: These are UI that are draggable w/ data that can be dropped on drop targets
+- Drop Targets: These are UI that drag sources can be "dropped" on
+
+Drag sources contain  _`DropGroup`_ - the group it belongs to - and drop targets contain _`DropGroups`_ - the groups it allows to drop on it.
+
+- Drag groups can be numbers or strings.
+
+Drag sources also contain _`Data`_, a value that is passed to any drop targets that validate and accept drag sources that are dropped on them.
+- As an example, if you have an inventory you may use the slot index as the data to let the target know what the source slot was
 
 # React
 To use Snapdragon with React, you can pass a `React.Ref` to Snapdragon directly in place of a `SnapdragonRef` and it will bind to the component.
