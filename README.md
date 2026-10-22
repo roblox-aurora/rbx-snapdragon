@@ -1,6 +1,14 @@
-# Snapdragon v2
+<!-- ![](Snapdragon.png) -->
 
-Library for draggable UIs in Roblox, with snapping and drag & drop capabilities.
+<div align="center">
+    <img src="Snapdragon.png" width="150">
+    <h1>Snapdragon v2</h2>
+    <p>
+        Library for draggable UIs in Roblox, with snapping and drag & drop capabilities.
+    </p>
+</div>
+
+
 
 
 # Basic Usage
