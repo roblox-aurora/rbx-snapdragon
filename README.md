@@ -47,6 +47,50 @@ Drag sources also contain _`Data`_, a value that is passed to any drop targets t
 # React
 To use Snapdragon with React, you can pass a `React.Ref` to Snapdragon directly in place of a `SnapdragonRef` and it will bind to the component.
 
+## Dragging UI (e.g. Windows)
+```luau
+const React = require(path.to.React)
+const Snapdragon = require(path.to.Snapdragon)
+
+-- A window that's dragged by the title
+-- If you want it just draggable overall - omit DragGui from the controller options
+local function WindowWithDraggableTitle(props)
+    local windowRef = React.useRef()
+    local titlebarRef = React.useRef()
+
+    React.useEffect(function() 
+        if not windowRef.current or not titlebarRef.current then return end -- snapdragon requires instances
+
+        local controller = Snapdragon.createDragController(windowRef, {
+            SnapEnabled = true, -- Enable snapping to edges
+            DragGui = titlebarRef,
+        })
+
+        controller:Connect() -- enable dragging
+
+        return function()
+            controller:Destroy()
+        end
+    end)
+
+    return React.createElement("Frame", {
+            ref = windowRef,
+            Size = UDim2.fromOffset(800, 600)
+        },
+        React.createElement("TextLabel", {
+            key = "Titlebar",
+            ref = titlebarRef,
+            Size = UDim2.new(1, 0, 0, 30),
+            Text = "Title",
+            TextSize = 20,
+        })
+        props.children
+    )
+end
+```
+
+## Drag and Drop (e.g. Inventory/Spell Slots)
+
 ```luau
 const React = require(path.to.React)
 const Snapdragon = require(path.to.Snapdragon)
