@@ -1,4 +1,4 @@
-local function objectAssign(target, ...)
+local function objectAssign<T>(target: T, ...: T): T
 	local targets = {...}
 	for _, t in pairs(targets) do
 		for k ,v in pairs(t) do

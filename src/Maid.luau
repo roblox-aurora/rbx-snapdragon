@@ -17,6 +17,17 @@ function Maid.new()
 	return setmetatable(self, Maid)
 end
 
+
+type Task = RBXScriptConnection | () -> () | { Destroy: () -> () }
+export type Maid = {
+	[string]: Task,
+	DoCleaning: (self: Maid) -> ()
+}
+
+type MaidType = {
+	new: () -> Maid,
+}
+
 --- Returns Maid[key] if not part of Maid metatable
 -- @return Maid[key] value
 function Maid:__index(index)
@@ -119,4 +130,4 @@ end
 -- @function Destroy
 Maid.Destroy = Maid.DoCleaning
 
-return Maid
+return Maid :: MaidType
