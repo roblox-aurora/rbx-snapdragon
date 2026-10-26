@@ -174,7 +174,6 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 	local startPos: UDim2
 	local guiStartPos: UDim2
 	local startAbsPos: Vector2
-	local anchor = gui.AnchorPoint
 
 	local function update(position: Vector3)
 		local snapHorizontalMargin = self.snapHorizontalMargin

@@ -85,12 +85,15 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
             instance.Size = UDim2.new(0, instance.AbsoluteSize.X, 0, instance.AbsoluteSize.Y)
             instance.Parent = hostGui
             hostGui.Parent = localPlayer:WaitForChild("PlayerGui")
+            
+            assert(hostGui.Parent)
         end
     end)
     
 
+    local targets
     maid.DragChange = controller.DragChanged:Connect(function(event: Snapdragon.DragChangedEvent)
-        const targets = self:GetDropTargets(dragSource.gui)
+        targets = self:GetDropTargets(dragSource.gui)
 
         for _, target in targets do
             if targetSet[target] then continue end
@@ -113,7 +116,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     end)
 
     controller.OnDragEnd = function()
-        local targets = self:GetDropTargets(ref)
+        if not targets then return end
 
         local dropped = false
         local droppedTarget: DragAndDrop.DropTarget?
