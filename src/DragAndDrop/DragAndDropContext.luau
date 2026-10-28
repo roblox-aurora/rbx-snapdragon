@@ -1,4 +1,5 @@
 --!strict
+const runService = game:GetService("RunService")
 
 const Maid = require("../Maid")
 const Snapdragon = require("../Types")
@@ -44,7 +45,7 @@ end
 
 --- Registers the given snapdragon object as a draggable source
 function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef, options: DragAndDrop.DragSourceOptions)
-    const raiseAbove = if options.RaiseAbove ~= nil then options.RaiseAbove else true
+    const raiseAbove = if options.RaiseAbove ~= nil then options.RaiseAbove else runService:IsClient()
 
     local mergedConfig = assignConfig({
         DragRelativeTo = "LayerCollector",
@@ -68,18 +69,24 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     }
     self.dragSources[ref] = dragSource
 
-    local targetSet: Types.Set<DragAndDrop.DropTarget> = {} 
 
     local originParent: Instance?
     local originSize: UDim2
 
     local localPlayer = game:GetService("Players").LocalPlayer
 
+        
+    local targets
+    -- local targetSet: Types.Set<DragAndDrop.DropTarget> = {}
+    local lastTarget: DragAndDrop.DropTarget?
+
     maid.DragBegin = controller.DragBegan:Connect(function(event) 
-        targetSet = {}
+        -- targetSet = {}
+        targets = {}
 
         if raiseAbove and localPlayer then
             local instance = ref.current
+
             originParent = instance.Parent
             originSize = instance.Size
 
@@ -89,34 +96,59 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
             
             assert(hostGui.Parent)
         end
-    end)
-    
 
-    local targets
-    maid.DragChange = controller.DragChanged:Connect(function(event: Snapdragon.DragChangedEvent)
-        targets = self:GetDropTargets(dragSource.gui)
+        
+        runService:BindToRenderStep("DragAndDrop", Enum.RenderPriority.First.Value, function(delta: number)
+            targets = self:GetDropTargets(dragSource.gui)
 
-        for _, target in targets do
-            if targetSet[target] then continue end
-
-            if typeof(target.onHover) == "function" then
-                target.onHover(dragSource.data, dragSource.gui.current)
-            end
-
-            targetSet[target] = true
-        end
-
-        for target in targetSet do
-            if not table.find(targets, target) then
-                targetSet[target] = nil
-                if typeof(target.onHoverStop) == "function" then
-                    target.onHoverStop(dragSource.data, dragSource.gui.current)
+            local currentTarget = targets[1]
+            if currentTarget ~= lastTarget then
+                if lastTarget and typeof(lastTarget.onHoverStop) == "function" then
+                    lastTarget.onHoverStop(dragSource.data, dragSource.gui.current)
                 end
+
+                if currentTarget and typeof(currentTarget.onHover) == "function" then
+                    currentTarget.onHover(dragSource.data, dragSource.gui.current)
+                end
+
+                lastTarget = currentTarget
             end
-        end
+
+            -- for target in targetSet do
+            --     if not table.find(targets, target) then
+            --         if typeof(target.onHoverStop) == "function" then
+            --             target.onHoverStop(dragSource.data, dragSource.gui.current)
+            --         end
+
+            --         targetSet[target] = nil
+            --     end
+            -- end
+
+            -- for _, target in targets do
+            --     if targetSet[target] then continue end
+            --     targetSet[target] = true
+
+            --     if typeof(target.onHover) == "function" then
+            --         target.onHover(dragSource.data, dragSource.gui.current)
+            --     end
+            -- end
+        end)
     end)
 
     controller.OnDragEnd = function()
+        runService:UnbindFromRenderStep("DragAndDrop")
+        
+        if lastTarget and typeof(lastTarget.onHoverStop) == "function" then
+            lastTarget.onHoverStop(dragSource.data, dragSource.gui.current)
+        end
+        lastTarget = nil
+
+        -- for target in targetSet do
+        --     if typeof(target.onHoverStop) == "function" then
+        --         target.onHoverStop(dragSource.data, dragSource.gui.current)
+        --     end
+        -- end
+
         if not targets then return end
 
         local dropped = false
