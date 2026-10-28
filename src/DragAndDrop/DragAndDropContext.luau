@@ -285,8 +285,6 @@ function SnapdragAndDropContext.GetDropTargets(self: SnapdragAndDropContext, sou
 
         const rect = Rect.new(dropGui.AbsolutePosition, dropGui.AbsolutePosition + dropGui.AbsoluteSize)
 
-        print(hoverPos, "check against", rect.Min, ";", rect.Max)
-
         if not pointIntersectsRect(hoverPos, rect) then continue end
 
         table.insert(dropTargets, v)
