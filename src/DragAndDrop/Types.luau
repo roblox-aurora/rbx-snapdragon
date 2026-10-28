@@ -21,7 +21,8 @@ export type DragSource = {
 	id: string,
 	dragEnd: DragEndAction?,
     controller: types.SnapdragonController,
-	maid: maid.Maid
+	maid: maid.Maid,
+	margin: Rect?,
 }
 
 export type DropTarget = {
@@ -48,6 +49,8 @@ export type DragSourceOptions = {
     RaiseAbove: boolean?,
 	-- Options to pass to the controller
 	ControllerOptions: Types.Partial<Types.SnapdragonOptions>?,
+	-- The margin to apply to the drag source
+	Margin: Rect?,
 }
 
 export type DropTargetOptions = {

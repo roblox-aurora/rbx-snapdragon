@@ -61,6 +61,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
         controller = controller,
         data = options.Data,
         gui = ref,
+        margin = options.Margin,
         id = game:GetService("HttpService"):GenerateGUID(false),
         dropId = options.DropGroup,
         maid = maid,
@@ -198,17 +199,22 @@ function SnapdragAndDropContext.UnregisterDropTarget(self: SnapdragAndDropContex
     self.dropTargets[ref] = nil
 end
 
-local function intersects(source: GuiObject, target: GuiObject)
+local function intersects(source: GuiObject, target: GuiObject, sourceMargin: Rect?)
     const targetGuiPos = target.AbsolutePosition
     const targetGuiSize = target.AbsoluteSize
 
     const sourceGuiPos = source.AbsolutePosition
     const sourceGuiSize = source.AbsoluteSize
 
-    const instPos = sourceGuiPos
-    const instEndPos = sourceGuiPos + sourceGuiSize
+    local instPos = sourceGuiPos
+    local instEndPos = sourceGuiPos + sourceGuiSize
     const intersectPos = targetGuiPos
     const intersectEndPos = targetGuiPos + targetGuiSize
+
+    if sourceMargin ~= nil then
+        instPos = Vector2.new(instPos.X + sourceMargin.Min.X, instPos.Y + sourceMargin.Min.Y)
+        instEndPos = Vector2.new(instEndPos.X - sourceMargin.Max.X, instEndPos.Y - sourceMargin.Max.Y)
+    end
 
 	return (
 		instEndPos.X > intersectPos.X
@@ -229,7 +235,7 @@ function SnapdragAndDropContext.GetDropTargets(self: SnapdragAndDropContext, sou
         local dropGui = k.current
 
         if not table.find(v.dropIds, dragSource.dropId) then continue end -- must match group
-        if not intersects(dragGui, dropGui) then continue end -- must intersect
+        if not intersects(dragGui, dropGui, dragSource.margin) then continue end -- must intersect
 
         table.insert(dropTargets, v)
     end

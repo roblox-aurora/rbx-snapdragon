@@ -3,3 +3,4 @@
 !src/*.luau
 !src/**/*.luau
 !default.project.json
+!Snapdragon.png

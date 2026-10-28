@@ -289,6 +289,11 @@ declare interface DragSourceOptions {
 	 * Override snapdragon options for the drag source
 	 */
 	readonly ControllerOptions?: Partial<SnapdragonOptions>,
+
+	/**
+	 * The margin to apply to the drag object
+	 */
+	readonly Margin?: Rect;
 }
 
 declare interface DropTargetOptions {
