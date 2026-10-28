@@ -1,4 +1,5 @@
 --!strict
+const UserInputService = game:GetService("UserInputService")
 const runService = game:GetService("RunService")
 
 const Maid = require("../Maid")
@@ -77,11 +78,9 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
 
         
     local targets
-    -- local targetSet: Types.Set<DragAndDrop.DropTarget> = {}
     local lastTarget: DragAndDrop.DropTarget?
 
     maid.DragBegin = controller.DragBegan:Connect(function(event) 
-        -- targetSet = {}
         targets = {}
 
         if raiseAbove and localPlayer then
@@ -113,25 +112,6 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
 
                 lastTarget = currentTarget
             end
-
-            -- for target in targetSet do
-            --     if not table.find(targets, target) then
-            --         if typeof(target.onHoverStop) == "function" then
-            --             target.onHoverStop(dragSource.data, dragSource.gui.current)
-            --         end
-
-            --         targetSet[target] = nil
-            --     end
-            -- end
-
-            -- for _, target in targets do
-            --     if targetSet[target] then continue end
-            --     targetSet[target] = true
-
-            --     if typeof(target.onHover) == "function" then
-            --         target.onHover(dragSource.data, dragSource.gui.current)
-            --     end
-            -- end
         end)
     end)
 
@@ -142,12 +122,6 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
             lastTarget.onHoverStop(dragSource.data, dragSource.gui.current)
         end
         lastTarget = nil
-
-        -- for target in targetSet do
-        --     if typeof(target.onHoverStop) == "function" then
-        --         target.onHoverStop(dragSource.data, dragSource.gui.current)
-        --     end
-        -- end
 
         if not targets then return end
 
@@ -171,8 +145,6 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
         if typeof(dragSource.dragEnd) == "function" then
             dragSource.dragEnd(dropped)
         end
-
-        targetSet = {} -- clear set
     end
 
     maid.DragEnded = controller.DragEnded:Connect(function(event)
@@ -231,6 +203,39 @@ function SnapdragAndDropContext.UnregisterDropTarget(self: SnapdragAndDropContex
     self.dropTargets[ref] = nil
 end
 
+local function getClip(instance: GuiObject)
+    if instance:IsA("ScrollingFrame") then
+        return instance.AbsolutePosition, instance.AbsoluteSize
+    elseif instance.ClipsDescendants then
+        return instance.AbsolutePosition, instance.AbsoluteSize
+    elseif instance.Parent and instance.Parent:IsA("GuiObject") then
+        return getClip(instance.Parent)
+    else
+        return Vector2.new(), Vector2.new()
+    end
+end
+
+local function pointIntersectsRect(point: Vector2, rect: Rect)
+    local instanceStartPosition = rect.Min
+    local instanceEndPosition = rect.Max
+
+	return (
+		    point.X >= instanceStartPosition.X
+        and point.Y >= instanceStartPosition.Y
+        and point.X <= instanceEndPosition.X
+        and point.Y <= instanceEndPosition.Y
+	)
+end
+
+local function intersectsPos(instPos: Vector2, instEndPos: Vector2, intersectPos: Vector2, intersectEndPos: Vector2)
+	return (
+		instEndPos.X > intersectPos.X
+		and instEndPos.Y > intersectPos.Y
+		and instPos.X < intersectEndPos.X
+		and instPos.Y < intersectEndPos.Y
+	)
+end
+
 local function intersects(source: GuiObject, target: GuiObject, sourceMargin: Rect?)
     const targetGuiPos = target.AbsolutePosition
     const targetGuiSize = target.AbsoluteSize
@@ -256,18 +261,33 @@ local function intersects(source: GuiObject, target: GuiObject, sourceMargin: Re
 	)
 end
 
+local USE_MOUSE = false
 function SnapdragAndDropContext.GetDropTargets(self: SnapdragAndDropContext, source: Snapdragon.SnapdragonRef): { DragAndDrop.DropTarget }
-    local dragSource = self.dragSources[source]
+    const dragSource = self.dragSources[source]
     if not dragSource then return {} end
 
-    local dropTargets: { DragAndDrop.DropTarget } = {}
+    const mouseLocation = UserInputService:GetMouseLocation()
+    const dropTargets: { DragAndDrop.DropTarget } = {}
 
-    local dragGui = source.current
+    const dragGui = source.current
     for k, v in self.dropTargets do
-        local dropGui = k.current
+        const dropGui = k.current
+        const hoverPos = if USE_MOUSE then mouseLocation else dragGui.AbsolutePosition + dragGui.AbsoluteSize / 2
+
+        const clipPosition, clipSize = getClip(dropGui)
+        if clipSize ~= Vector2.zero then
+            local rect = Rect.new(clipPosition, clipPosition + clipSize)
+            if not pointIntersectsRect(hoverPos, rect) then continue end
+        end
+
 
         if not table.find(v.dropIds, dragSource.dropId) then continue end -- must match group
-        if not intersects(dragGui, dropGui, dragSource.margin) then continue end -- must intersect
+
+        const rect = Rect.new(dropGui.AbsolutePosition, dropGui.AbsolutePosition + dropGui.AbsoluteSize)
+
+        print(hoverPos, "check against", rect.Min, ";", rect.Max)
+
+        if not pointIntersectsRect(hoverPos, rect) then continue end
 
         table.insert(dropTargets, v)
     end
