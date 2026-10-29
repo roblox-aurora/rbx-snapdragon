@@ -9,9 +9,13 @@ declare interface SnapProps {
 }
 
 declare interface SnapdragonRef {
-	Update(gui: GuiObject): void;
-	Get(): GuiObject | undefined;
+	current: GuiObject;
 }
+
+type ReactRefLike = { current: unknown };
+type RoactRefLike = { getValue(): unknown };
+
+declare type RefLike = SnapdragonRef | ReactRefLike | RoactRefLike;
 
 declare interface SnapdragonRefConstructor {
 	new (gui?: GuiObject): SnapdragonRef;
@@ -27,13 +31,13 @@ declare interface DraggingOptions {
 	 *
 	 * Useful for things like titlebars
 	 */
-	DragGui?: GuiObject | SnapdragonRef;
+	DragGui?: GuiObject | RefLike;
 
 	/**
 	 * The amount of pixels the mouse must be held down before the dragging happens
-	 * 
+	 *
 	 * Note: The bigger the threshold, the more "snappy" the initial drag may feel.
-	 * 
+	 *
 	 * @todo
 	 */
 	DragThreshold?: number;
@@ -57,7 +61,7 @@ declare interface DraggingOptions {
 	 * @todo
 	 */
 	DragPositionMode?: DragPositionMode;
-	
+
 	/**
 	 * The position is reset on drag end
 	 */
@@ -67,6 +71,11 @@ declare interface DraggingOptions {
 	 * Callback to whether or not to allow this component to drag
 	 */
 	CanDrag?: () => boolean;
+
+	/**
+	 * The distance required for the drag to start working
+	 */
+	RequiredDragDistance?: number;
 }
 
 declare interface DraggingSnapOptions {
@@ -97,25 +106,16 @@ declare interface DraggingSnapOptions {
 	SnapAxis?: AxisConstraint;
 }
 
-declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {
+declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {}
 
-}
-
-declare interface Signal<
-	ConnectedFunctionSignature = () => void,
-	Generic = false
-> {
+declare interface Signal<ConnectedFunctionSignature = () => void, Generic = false> {
 	/**
 	 * Connects a callback to BindableEvent.Event
 	 * @param callback The function to connect to BindableEvent.Event
 	 */
-	Connect<
-		O extends Array<unknown> = FunctionArguments<ConnectedFunctionSignature>
-	>(
+	Connect<O extends Array<unknown> = FunctionArguments<ConnectedFunctionSignature>>(
 		callback: Generic extends true
-			? FunctionArguments<ConnectedFunctionSignature> extends Array<
-					unknown
-			  >
+			? FunctionArguments<ConnectedFunctionSignature> extends Array<unknown>
 				? (...args: O) => void
 				: ConnectedFunctionSignature
 			: ConnectedFunctionSignature,
@@ -130,8 +130,8 @@ declare interface Signal<
 declare type Extents = "Float" | "Min" | "Max";
 
 declare interface Vector2Extents {
-	X: Extents,
-	Y: Extents
+	X: Extents;
+	Y: Extents;
 }
 
 declare interface DragBeganEvent {
@@ -154,7 +154,7 @@ declare interface DragChangedEvent {
 declare interface SnapdragonController {
 	/**
 	 * Stops this drag controller from listening for drag events.
-	 * 
+	 *
 	 * Call `Destroy` to clean up this controller & all attached events such as `DragBegan`, `DragEnded`
 	 */
 	Disconnect(): void;
@@ -195,9 +195,9 @@ declare interface SnapdragonController {
 
 	/**
 	 * The amount of pixels the mouse must be held down before the dragging happens
-	 * 
+	 *
 	 * Note: The bigger the threshold, the more "snappy" the initial drag may feel.
-	 * 
+	 *
 	 * @param dragThreshold The drag threshold
 	 */
 	SetDragThreshold(dragThreshold: number): void;
@@ -216,7 +216,7 @@ declare interface SnapdragonController {
 
 	/**
 	 * Fully cleans up this controller & locks it from further use.
-	 * 
+	 *
 	 * Actions:
 	 * - Calls `Disconnect` on this controller
 	 * - Disconnects all `DragBegan` and `DragEnded` events.
@@ -232,17 +232,14 @@ declare interface SnapdragonConstructor {
 	 * @param dragGui The draggable Gui (defaults to `gui`)
 	 * @param dragSnapOptions The snap options
 	 */
-	new (
-		gui: GuiObject | SnapdragonRef,
-		options?: SnapdragonOptions,
-	): SnapdragonController;
+	new (gui: GuiObject | RefLike, options?: SnapdragonOptions): SnapdragonController;
 }
 
 declare const SnapdragonController: SnapdragonConstructor;
 
 // /**
 //  * A reference for a gui object
-//  * 
+//  *
 //  * This is useful for Roact-based UI
 //  */
 // declare const SnapdragonRef: SnapdragonRefConstructor;
@@ -255,17 +252,102 @@ declare function createRef(gui?: GuiObject): SnapdragonRef;
  * @param dragGui The draggable Gui (defaults to `gui`)
  * @param dragSnapOptions The snap options
  */
-declare function createDragController(
-	gui: GuiObject | SnapdragonRef,
-	options?: SnapdragonOptions,
-): SnapdragonController;
+declare function createDragController(gui: GuiObject | RefLike, options?: SnapdragonOptions): SnapdragonController;
+
+declare type DragGroupType = string | number;
+
+declare interface DragSource {
+	readonly gui: SnapdragonRef;
+	readonly dropId: DragGroupType;
+	readonly data: unknown;
+}
+
+declare interface DropTarget {
+	readonly gui: SnapdragonRef;
+	readonly dropIds: readonly DragGroupType[];
+}
+
+declare type CanDropPredicate = (targetData: unknown) => void;
+declare type CanDragPredicate = () => void;
+
+declare type DroppedOnTargetCallback = (sourceData: unknown, sourceGui: GuiObject) => void;
+declare type HoveredOverTargetCallback = (sourceData: unknown, sourceGui: GuiObject) => void;
+
+declare interface DragSourceOptions {
+	/**
+	 * The group this source belongs to
+	 */
+	readonly DropGroup: DragGroupType;
+	/**
+	 * The data that will be given to any drop targets that are valid
+	 */
+	readonly Data: unknown;
+	/**
+	 * A predicate to check if this source can be dragged
+	 */
+	readonly CanDragSource?: CanDragPredicate;
+	/**
+	 * Raise this drag source above everything else when dragged - defaults to `true`
+	 */
+	readonly RaiseAbove?: boolean;
+	/**
+	 * Override snapdragon options for the drag source
+	 */
+	readonly ControllerOptions?: Partial<SnapdragonOptions>,
+
+	/**
+	 * The margin to apply to the drag object
+	 */
+	readonly Margin?: Rect;
+}
+
+declare interface DropTargetOptions {
+	/**
+	 * Drop groups accepted by this drop target
+	 */
+	readonly DropGroups: DragGroupType[];
+	/**
+	 * A function invoked when a source is dropped on this target
+	 */
+	readonly DroppedOnTarget?: DroppedOnTargetCallback;
+	/**
+	 * A predicate to determine if it's valid to drop on this target
+	 */
+	readonly CanDropOnTarget?: CanDropPredicate;
+	/**
+	 * The priority of this target, higher means that even if it's overlapping another target it will take precedence
+	 */
+	readonly DropPriority?: number;
+	/**
+	 * A valid drag object is hovering over this target
+	 */
+	readonly HoveringOverTarget?: HoveredOverTargetCallback;
+	/**
+	 * A valid drag object has stopped hovering over this target
+	 */
+	readonly StoppedHoveringOverTarget?: HoveredOverTargetCallback;
+}
+
+declare interface SnapdragonDnDContext<TData = unknown> {
+	RegisterDragSource(ref: RefLike, options: DragSourceOptions): SnapdragonController;
+	RegisterDropTarget(ref: RefLike, options: DropTargetOptions): void;
+
+	UnregisterDragSource(ref: SnapdragonRef): void;
+	UnregisterDropTarget(ref: SnapdragonRef): void;
+
+	GetDragSource(ref: SnapdragonRef): DragSource | undefined;
+	GetDropTarget(ref: SnapdragonRef): DropTarget | undefined;
+}
+declare function createDragAndDropContext<T = unknown>(): SnapdragonDnDContext<T>;
 
 export as namespace Snapdragon;
 export {
 	createDragController,
+	createDragAndDropContext,
 	SnapProps,
 	SnapMargin,
 	SnapdragonOptions,
 	SnapdragonController,
+	SnapdragonDnDContext,
 	createRef,
 };

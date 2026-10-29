@@ -1,6 +1,6 @@
 {
 	"name": "@rbxts/snapdragon",
-	"version": "2.0.0-beta.1",
+	"version": "3.0.0-beta.0",
 	"description": "A library that allows UI to be draggable in/and snappable to the viewport",
 	"main": "src/init.lua",
 	"keywords": [],
@@ -9,7 +9,11 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@rbxts/compiler-types": "^1.0.0-beta.11.1",
-		"@rbxts/types": "^1.0.431"
+		"@rbxts/types": "^1.0.431",
+		"roblox-ts": "^3.0.0"
+	},
+	"publishConfig": {
+		"tag": "beta"
 	},
 	"repository": {
 		"type": "git",
