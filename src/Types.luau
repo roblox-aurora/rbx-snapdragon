@@ -75,6 +75,7 @@ export type SnapdragonOptions = {
 	DragPositionMode: DragPositionMode?,
 	CanDrag: DragPredicate | nil,
 	DragEndedResetsPosition: boolean?,
+	RequiredDragDistance: number?,
 }
 
 export type DragBeganEvent = {

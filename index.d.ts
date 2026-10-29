@@ -71,6 +71,11 @@ declare interface DraggingOptions {
 	 * Callback to whether or not to allow this component to drag
 	 */
 	CanDrag?: () => boolean;
+
+	/**
+	 * The distance required for the drag to start working
+	 */
+	RequiredDragDistance?: number;
 }
 
 declare interface DraggingSnapOptions {

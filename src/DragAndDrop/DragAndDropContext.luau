@@ -47,13 +47,15 @@ end
 --- Registers the given snapdragon object as a draggable source
 function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext, ref: Snapdragon.SnapdragonRef, options: DragAndDrop.DragSourceOptions)
     const raiseAbove = if options.RaiseAbove ~= nil then options.RaiseAbove else runService:IsClient()
+	local pluginAncestor = ref.current:FindFirstAncestorWhichIsA("PluginGui")
 
     local mergedConfig = assignConfig({
-        DragRelativeTo = "LayerCollector",
+        DragRelativeTo = if pluginAncestor then "Parent" else "LayerCollector",
         DragEndedResetsPosition = true,
         CanDrag = options.CanDragSource,
         DragPositionMode = if raiseAbove then "AbsoluteOffset" else "Offset",
-        SnapEnabled = false
+        SnapEnabled = false,
+        RequiredDragDistance = 50
     }, options.ControllerOptions)
 
     const controller = SnapdragonController.new(ref, mergedConfig)
@@ -203,13 +205,13 @@ function SnapdragAndDropContext.UnregisterDropTarget(self: SnapdragAndDropContex
     self.dropTargets[ref] = nil
 end
 
-local function getClip(instance: GuiObject)
+local function getClipRect(instance: GuiObject)
     if instance:IsA("ScrollingFrame") then
         return instance.AbsolutePosition, instance.AbsoluteSize
     elseif instance.ClipsDescendants then
         return instance.AbsolutePosition, instance.AbsoluteSize
     elseif instance.Parent and instance.Parent:IsA("GuiObject") then
-        return getClip(instance.Parent)
+        return getClipRect(instance.Parent)
     else
         return Vector2.new(), Vector2.new()
     end
@@ -227,40 +229,6 @@ local function pointIntersectsRect(point: Vector2, rect: Rect)
 	)
 end
 
-local function intersectsPos(instPos: Vector2, instEndPos: Vector2, intersectPos: Vector2, intersectEndPos: Vector2)
-	return (
-		instEndPos.X > intersectPos.X
-		and instEndPos.Y > intersectPos.Y
-		and instPos.X < intersectEndPos.X
-		and instPos.Y < intersectEndPos.Y
-	)
-end
-
-local function intersects(source: GuiObject, target: GuiObject, sourceMargin: Rect?)
-    const targetGuiPos = target.AbsolutePosition
-    const targetGuiSize = target.AbsoluteSize
-
-    const sourceGuiPos = source.AbsolutePosition
-    const sourceGuiSize = source.AbsoluteSize
-
-    local instPos = sourceGuiPos
-    local instEndPos = sourceGuiPos + sourceGuiSize
-    const intersectPos = targetGuiPos
-    const intersectEndPos = targetGuiPos + targetGuiSize
-
-    if sourceMargin ~= nil then
-        instPos = Vector2.new(instPos.X + sourceMargin.Min.X, instPos.Y + sourceMargin.Min.Y)
-        instEndPos = Vector2.new(instEndPos.X - sourceMargin.Max.X, instEndPos.Y - sourceMargin.Max.Y)
-    end
-
-	return (
-		instEndPos.X > intersectPos.X
-		and instEndPos.Y > intersectPos.Y
-		and instPos.X < intersectEndPos.X
-		and instPos.Y < intersectEndPos.Y
-	)
-end
-
 local USE_MOUSE = false
 function SnapdragAndDropContext.GetDropTargets(self: SnapdragAndDropContext, source: Snapdragon.SnapdragonRef): { DragAndDrop.DropTarget }
     const dragSource = self.dragSources[source]
@@ -274,17 +242,15 @@ function SnapdragAndDropContext.GetDropTargets(self: SnapdragAndDropContext, sou
         const dropGui = k.current
         const hoverPos = if USE_MOUSE then mouseLocation else dragGui.AbsolutePosition + dragGui.AbsoluteSize / 2
 
-        const clipPosition, clipSize = getClip(dropGui)
+        const clipPosition, clipSize = getClipRect(dropGui)
         if clipSize ~= Vector2.zero then
             local rect = Rect.new(clipPosition, clipPosition + clipSize)
             if not pointIntersectsRect(hoverPos, rect) then continue end
         end
 
-
         if not table.find(v.dropIds, dragSource.dropId) then continue end -- must match group
 
         const rect = Rect.new(dropGui.AbsolutePosition, dropGui.AbsolutePosition + dropGui.AbsoluteSize)
-
         if not pointIntersectsRect(hoverPos, rect) then continue end
 
         table.insert(dropTargets, v)

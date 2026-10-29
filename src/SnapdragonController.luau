@@ -26,6 +26,7 @@ type SnapdragonControllerProps = {
 	canDrag: Types.DragPredicate?,
 	dragGridSize: number,
 	dragPositionMode: Types.DragPositionMode?,
+	requireDragDistance: number,
 
 	_useAbsoluteCoordinates: boolean,
 
@@ -43,6 +44,8 @@ type SnapdragonControllerProps = {
 	snapThresholdVertical: Vector2,
 	snapThresholdHorizontal: Vector2,
 
+	dragScaleModifier: number,
+
 	locked: boolean,
 }
 
@@ -51,7 +54,29 @@ export type SnapdragonController = Types.SnapdragonController
 
 local controllers = setmetatable({}, { __mode = "k" }) :: { [GuiObject]: SnapdragonInternal }
 
+local function findAllScaleModifiers(instance: GuiObject | LayerCollector, scales: {number}?): { read number }
+	scales = scales or {}
+
+	local scale = instance:FindFirstChildWhichIsA("UIScale")
+	if scale then 
+		table.insert(scales, 1, scale.Scale) -- we go LIFO with scaling since it's based on heirarchy
+	end
+
+	if instance.Parent ~= nil and (instance.Parent:IsA("GuiObject") or instance.Parent:IsA("LayerCollector")) then
+		return findAllScaleModifiers(instance.Parent, scales)
+	end
+
+	return scales
+end
+
 function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options: Types.SnapdragonOptions): Types.SnapdragonController
+	local dragGui = options.DragGui
+	local guiRef = SnapdragonRef.toRef(gui)
+	local dragGuiRef = if dragGui then SnapdragonRef.toRef(dragGui) else guiRef
+
+	local pluginAncestor = dragGuiRef.current:FindFirstAncestorWhichIsA("PluginGui")
+	local scale = 1
+
 	options = objectAssign<<Types.SnapdragonOptions>>({
 		DragGui = gui,
 		DragThreshold = 0,
@@ -63,16 +88,12 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 		SnapAxis = "XY",
 		DragAxis = "XY",
 		Debugging = false,
-		DragRelativeTo = "LayerCollector",
+		DragRelativeTo = if pluginAncestor then "Parent" else "LayerCollector",
 		DragPositionMode = "Scale",
 	}, options) :: Types.SnapdragonOptions
 
 	local self = setmetatable({}, SnapdragonController) :: SnapdragonInternal
 	-- Basic immutable values
-	local dragGui = options.DragGui
-
-	local guiRef = SnapdragonRef.toRef(gui)
-	local dragGuiRef = if dragGui then SnapdragonRef.toRef(dragGui) else guiRef
 
 	self.gui = guiRef
 	self.dragGui = dragGuiRef
@@ -84,6 +105,7 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 	self.originPosition = self.dragGui.current.Position
 	self.canDrag = options.CanDrag
 	self.dragEndedResetsPosition = options.DragEndedResetsPosition or false
+	self.dragScaleModifier = scale
 
 	self.snapEnabled = options.SnapEnabled or false
 	self.snapAxis = options.SnapAxis
@@ -93,6 +115,7 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 	self.dragRelativeTo = options.DragRelativeTo
 	self.dragGridSize = options.DragGridSize or 0
 	self.dragPositionMode = options.DragPositionMode
+	self.requireDragDistance = options.RequiredDragDistance or 0
 
 	-- Internal stuff
 	self._useAbsoluteCoordinates = false
@@ -174,8 +197,9 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 	local startPos: UDim2
 	local guiStartPos: UDim2
 	local startAbsPos: Vector2
+	local scaleModifier = 1
 
-	local function update(position: Vector3)
+	local function updateDragPosition(position: Vector3)
 		local snapHorizontalMargin = self.snapHorizontalMargin
 		local snapVerticalMargin = self.snapVerticalMargin
 		local snapThresholdVertical = self.snapThresholdVertical
@@ -189,6 +213,12 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 		elseif dragAxis == "Y" then
 			delta = Vector3.new(0, delta.Y, 0)
 		end
+		
+		if self.requireDragDistance > 0 and delta.Magnitude < self.requireDragDistance then
+			return
+		end
+
+		delta = delta / scaleModifier
 
 		gui = dragGui or gui
 		reachedExtents = {
@@ -288,15 +318,16 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 			end
 		else
 			if dragGridSize > 0 then
-				delta = Vector2.new(
+				delta = Vector3.new(
 					math.floor(delta.X / dragGridSize) * dragGridSize,
-					math.floor(delta.Y / dragGridSize) * dragGridSize
+					math.floor(delta.Y / dragGridSize) * dragGridSize,
+					0
 				)
 			end
 
 			if dragPositionMode == "AbsoluteOffset" then
 				local newPosition =
-					UDim2.new(0, startAbsPos.X + delta.X, 0, startAbsPos.Y + delta.Y)
+					UDim2.new(0, startAbsPos.X + (delta.X), 0, startAbsPos.Y + delta.Y)
 				gui.Position = newPosition
 
 
@@ -316,6 +347,59 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 		end
 	end
 
+	local function startDragging(startPosition: Vector3)
+		if dragging then return end
+
+		dragging = true
+		dragStart = startPosition
+
+		scaleModifier = 1 -- reset modifier to 1
+		-- Apply any scaling required to our drag behaviour
+		local scales = findAllScaleModifiers(gui)
+		for _, scale in scales do
+			scaleModifier *= scale
+		end
+		print("scale is", scaleModifier)
+
+		local draggingGui = (dragGui or gui)
+		startPos = useAbsoluteCoordinates
+				and UDim2.new(0, draggingGui.AbsolutePosition.X, 0, draggingGui.AbsolutePosition.Y)
+			or draggingGui.Position
+
+		startAbsPos = draggingGui.AbsolutePosition
+		guiStartPos = draggingGui.Position
+
+
+
+		if dragPositionMode == "AbsoluteOffset" then
+			local newPosition =
+				UDim2.new(0, startAbsPos.X, 0, startAbsPos.Y)
+			gui.Position = newPosition
+		end
+
+		DragBegan:Fire({
+			AbsolutePosition = (dragGui or gui).AbsolutePosition,
+			InputPosition = dragStart,
+			GuiPosition = startPos,
+		})
+	end
+
+	local function endDragging(endPosition: Vector3)
+		if not dragging then return end
+
+		dragging = false
+
+		local draggingGui = (dragGui or gui)
+		local endPos = draggingGui.Position
+
+		DragEnded:Fire({
+			InputPosition = endPosition,
+			GuiPosition = endPos,
+			ReachedExtents = reachedExtents,
+			DraggedGui = dragGui or gui,
+		})
+	end
+
 	maid.guiInputBegan = gui.InputBegan:Connect(function(input)
 		local canDrag = true
 		if type(self.canDrag) == "function" then
@@ -326,30 +410,7 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
 			and canDrag
 		then
-			dragging = true
-			dragStart = input.Position
-
-			local draggingGui = (dragGui or gui)
-			startPos = useAbsoluteCoordinates
-					and UDim2.new(0, draggingGui.AbsolutePosition.X, 0, draggingGui.AbsolutePosition.Y)
-				or draggingGui.Position
-
-			startAbsPos = draggingGui.AbsolutePosition
-			guiStartPos = draggingGui.Position
-
-			if dragPositionMode == "AbsoluteOffset" then
-				local newPosition =
-					UDim2.new(0, startAbsPos.X, 0, startAbsPos.Y)
-				gui.Position = newPosition
-			end
-
-			DragBegan:Fire({
-				AbsolutePosition = (dragGui or gui).AbsolutePosition,
-				InputPosition = dragStart,
-				GuiPosition = startPos,
-			})
-
-
+			startDragging(input.Position)
 
 			if debug then
 				print("[snapdragon]", "Drag began", input.Position)
@@ -360,7 +421,7 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
                 -- Fixing dragging in a PluginGui context
                 while dragging do
                     local relativePos = pluginGui:GetRelativeMousePosition()
-                    update(Vector3.new(relativePos.X, relativePos.Y, 0))
+                    updateDragPosition(Vector3.new(relativePos.X, relativePos.Y, 0))
                     task.wait()
                 end
             end
@@ -376,17 +437,8 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 				or input.UserInputType == Enum.UserInputType.Touch
 			)
 		then
-			dragging = false
-
 			local draggingGui = (dragGui or gui)
-			local endPos = draggingGui.Position
-
-			DragEnded:Fire({
-				InputPosition = input.Position,
-				GuiPosition = endPos,
-				ReachedExtents = reachedExtents,
-				DraggedGui = dragGui or gui,
-			})
+			endDragging(input.Position)
 
 			if typeof(self.OnDragEnd) == "function" then
 				self.OnDragEnd()
@@ -416,7 +468,7 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 
 	maid.uisInputChanged = UserInputService.InputChanged:Connect(function(input)
 		if input == dragInput and dragging then
-			update(input.Position)
+			updateDragPosition(input.Position)
 		end
 	end)
 end
