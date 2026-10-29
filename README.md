@@ -2,7 +2,7 @@
 
 <div align="center">
     <img src="Snapdragon.png" width="150">
-    <h1>Snapdragon v2</h2>
+    <h1>Snapdragon v3</h2>
     <p>
         UI agnostic Roblox library for draggable UIs, with snapping and drag & drop capabilities.
     </p>
