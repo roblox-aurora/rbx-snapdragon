@@ -359,7 +359,6 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 		for _, scale in scales do
 			scaleModifier *= scale
 		end
-		print("scale is", scaleModifier)
 
 		local draggingGui = (dragGui or gui)
 		startPos = useAbsoluteCoordinates
