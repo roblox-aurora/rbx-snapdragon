@@ -22,8 +22,24 @@ declare interface SnapdragonRefConstructor {
 	is(value: unknown): value is SnapdragonRef;
 }
 
-declare type DragPositionMode = "Scale" | "Offset";
-declare type AxisConstraint = "XY" | "X" | "Y";
+declare const enum DragPositionMode {
+	Scale = "Scale",
+	Offset = "Offset",
+}
+
+declare const enum AxisConstraint {
+	X = "X",
+	Y = "Y",
+	XY = "XY",
+}
+
+declare const enum DragRelativeTo {
+	LayerCollector = "LayerCollector",
+	Parent = "Parent",
+}
+
+// declare type DragPositionMode = "Scale" | "Offset";
+// declare type AxisConstraint = "XY" | "X" | "Y";
 
 declare interface DraggingOptions {
 	/**
@@ -50,7 +66,7 @@ declare interface DraggingOptions {
 	/**
 	 * @todo
 	 */
-	DragRelativeTo?: "LayerCollector" | "Parent";
+	DragRelativeTo?: DragRelativeTo;
 
 	/**
 	 * @todo
@@ -111,6 +127,8 @@ declare const enum SnapdragonControllerType {
 	UIDragDetector = "UIDragDetector",
 }
 
+declare type ContentOrUri = string | Content;
+
 declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {
 	/**
 	 * The type of controller to use, currenly defaults to {@link SnapdragonControllerType.Legacy} but will be migrated to {@link SnapdragonControllerType.UIDragDetector} in future.
@@ -118,9 +136,9 @@ declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions
 	ControllerType?: SnapdragonControllerType,
 
 	/** Cursor to use on the draggable object (only works with {@link SnapdragonControllerType.UIDragDetector}) */
-	CursorIcon?: Content | string,
+	CursorIcon?: ContentOrUri,
 	/** Cursor to use on the draggable object when activated (only works with {@link SnapdragonControllerType.UIDragDetector}) */
-	ActiveCursorIcon?: Content | string,
+	ActiveCursorIcon?: ContentOrUri,
 }
 
 declare interface Signal<ConnectedFunctionSignature = () => void, Generic = false> {
@@ -365,4 +383,9 @@ export {
 	SnapdragonController,
 	SnapdragonDnDContext,
 	createRef,
+
+	DragPositionMode,
+	AxisConstraint,
+	DragRelativeTo,
+	SnapdragonControllerType
 };

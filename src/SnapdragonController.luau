@@ -1,5 +1,6 @@
 --!strict
 local UserInputService = game:GetService("UserInputService")
+const Workspace = game:GetService("Workspace")
 
 local objectAssign = require(script.Parent.objectAssign)
 local Signal = require(script.Parent.Signal)
@@ -103,7 +104,7 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 		Debugging = false,
 		DragRelativeTo = if pluginAncestor then "Parent" else "LayerCollector",
 		DragPositionMode = "Scale",
-		ControllerType = "Legacy"
+		ControllerType = "UIDragDetector"
 	}, options) :: Types.SnapdragonOptions
 
 	local self = setmetatable({}, SnapdragonController) :: SnapdragonInternal
@@ -132,7 +133,9 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 	self.requireDragDistance = options.RequiredDragDistance or 0
 	self.controllerType = options.ControllerType or "Legacy"
 
-	local defaultCursor = Content.fromUri("rbxasset://textures/Cursors/KeyboardMouse/ArrowCursor.png")
+	-- Keep the legacy cursor behaviour for now :?
+	local defaultCursor = if self:GetGui():IsA("GuiButton") then Content.fromUri("rbxasset://textures/Cursors/KeyboardMouse/ArrowCursor.png") else Content.fromUri("rbxasset://textures/Cursors/KeyboardMouse/ArrowFarCursor.png")
+	
 	self.cursorIconContent = if options.CursorIcon then toContent(options.CursorIcon) else defaultCursor
 	self.activeCursorIconContent = if options.ActiveCursorIcon then toContent(options.ActiveCursorIcon) else defaultCursor
 
@@ -190,6 +193,15 @@ function SnapdragonController.ResetPosition(self: SnapdragonInternal): ()
 	self.dragGui.current.Position = self.originPosition
 end
 
+local function getViewportSize(gui: GuiObject)
+	local layerCollector = gui:FindFirstAncestorWhichIsA("LayerCollector")
+	if layerCollector then
+		return layerCollector.AbsoluteSize
+	else
+		return Workspace.CurrentCamera.ViewportSize
+	end
+end
+
 function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonInternal)
 	const maid = self.maid
 	const dragDetector = Instance.new("UIDragDetector")
@@ -224,33 +236,67 @@ function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonIn
 		end)
 	end
 
+	if self.requireDragDistance > 0 then
+		if self.dragPositionMode == "Offset" then
+			local startGuiPos: UDim2
+
+			maid._ = dragDetector.DragStart:Connect(function(inputPosition: Vector2)
+				startGuiPos = dragGui.Position
+			end)
+
+			dragDetector:AddConstraintFunction(100, function(position: UDim2)
+				local delta = position - startGuiPos
+				local deltaVec = Vector2.new(
+					delta.X.Offset,
+					delta.Y.Offset
+				)
+
+				if deltaVec.Magnitude < self.requireDragDistance then
+					return startGuiPos, 0
+				end
+			end)
+		else
+			warn(`[Snapdragon] RequireDragDistance not supported for position mode {self.dragPositionMode} yet.`)
+		end
+	end
+
 	-- apply drag position
 	if dragGui ~= gui then
-		warn(`[Snapdragon] UIDragDetector drag handle behaviour ({self.dragPositionMode}) is currently experimental`)
-		if self.dragPositionMode == "Offset" then
-			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.CustomOffset
-			
-			maid.DragUDim2PropertyChangedSignal = dragDetector:GetPropertyChangedSignal("DragUDim2"):Connect(function(...)
-				const dragUDim2 = dragDetector.DragUDim2
-				print(dragUDim2)
-			end)
-		elseif self.dragPositionMode == "Scale" then
-			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.CustomScale
+		if self.dragPositionMode == "Offset" or self.dragPositionMode == "AbsoluteOffset" then
+			if self.dragPositionMode == "AbsoluteOffset" then
+				warn(`[Snapdragon] AbsoluteOffset is not supported for {self.controllerType}`)
+			end
 
-			maid.DragUDim2PropertyChangedSignal = dragDetector:GetPropertyChangedSignal("DragUDim2"):Connect(function(...)
-				const dragUDim2 = dragDetector.DragUDim2
-				print(dragUDim2)
+			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.CustomOffset
+			local startPos: UDim2
+
+			local dragging = false
+			maid.HandleDragStartEvent = dragDetector.DragStart:Connect(function(inputPosition: Vector2)
+				startPos = dragGui.Position
+				dragging = true
 			end)
-		else
-			warn("unsupported drag response style", self.dragPositionMode)
-		end
-	else
-		if self.dragPositionMode == "Offset" then
-			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.Offset
+
+			maid.HandleDragUDim2Change = dragDetector:GetPropertyChangedSignal("DragUDim2"):Connect(function()
+				if not dragging then return end
+				dragGui.Position = startPos + dragDetector.DragUDim2
+			end)
+
+			maid.HanldeDragEndedEvent = dragDetector.DragEnd:Connect(function(inputPosition: Vector2)
+				dragging = false
+			end)
 		elseif self.dragPositionMode == "Scale" then
 			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.Scale
-		else
-			warn("unsupported drag response style", self.dragPositionMode)
+			warn(`[Snapdragon] UIDragDetector drag handle behaviour ({self.dragPositionMode}) is currently not supported`)
+		end
+	else
+		if self.dragPositionMode == "Offset" or self.dragPositionMode == "AbsoluteOffset" then
+			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.Offset
+			
+			if self.dragPositionMode == "AbsoluteOffset" then
+				warn(`[Snapdragon] AbsoluteOffset is not supported for {self.controllerType}`)
+			end
+		elseif self.dragPositionMode == "Scale" then
+			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.Scale
 		end
 	end
 

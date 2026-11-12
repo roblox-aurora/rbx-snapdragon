@@ -16,9 +16,8 @@ do
 	-- attach dragger to window
 	local controller = Snapdragon.createDragController(windowFrame, {
 		SnapEnabled = true,
-		ControllerType = "UIDragDetector",
-		--DragPositionMode = "AbsoluteOffset",
-		DragAxis = "X",
+		--ControllerType = "UIDragDetector",
+		-- DragAxis = "X",
 	});
 
 	controller:Connect()
@@ -48,7 +47,7 @@ do
 	-- attach dragger to window
 	local controller = Snapdragon.createDragController(windowFrame, {
 		SnapEnabled = true,
-		ControllerType = "UIDragDetector"
+		--ControllerType = "UIDragDetector"
 	});
 	controller.DragEnded:Connect(function(_, ext)
 		print("ext", tick(),  ext.X, ext.Y)
@@ -65,7 +64,7 @@ do
 	windowFrame.Size = UDim2.new(0, 200, 0, 200)
 	windowFrame.Position = UDim2.new(0, 200, 0, 0)
 
-	local windowTitle = Instance.new("TextLabel")
+	local windowTitle = Instance.new("TextButton")
 	windowTitle.Text = "Drag Me"
 	windowTitle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 	windowTitle.Size = UDim2.new(1, 0, 0, 25)
@@ -79,7 +78,9 @@ do
 	local controller = Snapdragon.createDragController(windowTitle, {
 		DragGui = windowFrame, -- Tells this controller that it's dragging the window, not the titlebar
 		SnapEnabled = true,
-		ControllerType = "UIDragDetector"
+		--ControllerType = "UIDragDetector",
+		DragPositionMode = "Offset",
+		RequiredDragDistance = 50
 	});
 	controller:Connect()
 end

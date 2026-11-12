@@ -59,7 +59,8 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
         DragPositionMode = if raiseAbove then "AbsoluteOffset" else "Offset",
         SnapEnabled = false,
         RequiredDragDistance = 50,
-        Debugging = true
+        Debugging = true,
+        ControllerType = if raiseAbove then "Legacy" else "UIDragDetector"
     }, options.ControllerOptions)
 
     const controller = SnapdragonController.new(ref, mergedConfig)
