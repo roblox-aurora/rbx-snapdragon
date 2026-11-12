@@ -1,4 +1,5 @@
 --!strict
+const Players = game:GetService("Players")
 const UserInputService = game:GetService("UserInputService")
 const runService = game:GetService("RunService")
 
@@ -29,7 +30,9 @@ function SnapdragAndDropContext.new(): SnapdragAndDropContext
 end
 
 local hostGui = Instance.new("ScreenGui")
+hostGui.Name = "DragAndDropHost"
 hostGui.DisplayOrder = 1_000
+local USE_HOST_GUI = true
 
 local function assignConfig(config: Types.SnapdragonOptions, addendum: Types.Partial<Types.SnapdragonOptions>?): Types.SnapdragonOptions
     if addendum == nil then
@@ -51,11 +54,12 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
 
     local mergedConfig = assignConfig({
         DragRelativeTo = if pluginAncestor then "Parent" else "LayerCollector",
-        DragEndedResetsPosition = true,
+        DragEndedResetsPosition = true, 
         CanDrag = options.CanDragSource,
         DragPositionMode = if raiseAbove then "AbsoluteOffset" else "Offset",
         SnapEnabled = false,
-        RequiredDragDistance = 50
+        RequiredDragDistance = 50,
+        Debugging = true
     }, options.ControllerOptions)
 
     const controller = SnapdragonController.new(ref, mergedConfig)
@@ -85,17 +89,22 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     maid.DragBegin = controller.DragBegan:Connect(function(event) 
         targets = {}
 
-        if raiseAbove and localPlayer then
-            local instance = ref.current
+        local instance = ref.current
+        local layerCollector = instance:FindFirstAncestorWhichIsA("LayerCollector")
 
+        if raiseAbove and localPlayer and layerCollector then
             originParent = instance.Parent
             originSize = instance.Size
 
             instance.Size = UDim2.new(0, instance.AbsoluteSize.X, 0, instance.AbsoluteSize.Y)
-            instance.Parent = hostGui
-            hostGui.Parent = localPlayer:WaitForChild("PlayerGui")
-            
-            assert(hostGui.Parent)
+            instance.Position = UDim2.new(0, instance.AbsolutePosition.X, 0, instance.AbsolutePosition.Y)
+
+            if USE_HOST_GUI then
+                hostGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+                instance.Parent = hostGui
+            else
+                instance.Parent = layerCollector
+            end
         end
 
         
@@ -150,11 +159,12 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
     end
 
     maid.DragEnded = controller.DragEnded:Connect(function(event)
+        local instance = ref.current
+        
         if raiseAbove and localPlayer then
-            local instance = ref.current
-            instance.Parent = originParent
             instance.Size = originSize
-            hostGui.Parent = nil
+            instance.Parent = originParent
+            -- hostGui.Parent = nil
         end
     end)
 

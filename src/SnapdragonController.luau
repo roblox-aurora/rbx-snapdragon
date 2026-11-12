@@ -191,6 +191,7 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 
 	local reachedExtents
 
+	local active: boolean
 	local dragging: boolean
 	local dragInput: InputObject
 	local dragStart: Vector3
@@ -198,6 +199,41 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 	local guiStartPos: UDim2
 	local startAbsPos: Vector2
 	local scaleModifier = 1
+
+	local function startDragging(startPosition: Vector3, startAbsolutePosition: Vector2?)
+		if dragging then return end
+
+		dragging = true
+		dragStart = startPosition
+
+		scaleModifier = 1 -- reset modifier to 1
+		-- Apply any scaling required to our drag behaviour
+		local scales = findAllScaleModifiers(gui)
+		for _, scale in scales do
+			scaleModifier *= scale
+		end
+
+		local draggingGui = (dragGui or gui)
+		startPos = if dragPositionMode == "AbsoluteOffset" then UDim2.new(0, draggingGui.AbsolutePosition.X, 0, draggingGui.AbsolutePosition.Y)
+				   else draggingGui.Position
+
+		startAbsPos = startAbsolutePosition or draggingGui.AbsolutePosition
+		guiStartPos = draggingGui.Position
+
+
+
+		if dragPositionMode == "AbsoluteOffset" then
+			local newPosition =
+				UDim2.new(0, startAbsPos.X, 0, startAbsPos.Y)
+			gui.Position = newPosition
+		end
+
+		DragBegan:Fire({
+			AbsolutePosition = if startAbsolutePosition then startAbsolutePosition else (dragGui or gui).AbsolutePosition,
+			InputPosition = dragStart,
+			GuiPosition = startPos,
+		})
+	end
 
 	local function updateDragPosition(position: Vector3)
 		local snapHorizontalMargin = self.snapHorizontalMargin
@@ -214,9 +250,18 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 			delta = Vector3.new(0, delta.Y, 0)
 		end
 		
-		if self.requireDragDistance > 0 and delta.Magnitude < self.requireDragDistance then
-			return
+		-- if self.requireDragDistance > 0 and delta.Magnitude < self.requireDragDistance then
+		-- 	return
+		-- end
+
+		if self.requireDragDistance > 0 then
+			if delta.Magnitude < self.requireDragDistance then
+				return
+			elseif not dragging then
+				startDragging(dragStart)
+			end
 		end
+
 
 		delta = delta / scaleModifier
 
@@ -347,46 +392,13 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 		end
 	end
 
-	local function startDragging(startPosition: Vector3)
-		if dragging then return end
-
-		dragging = true
-		dragStart = startPosition
-
-		scaleModifier = 1 -- reset modifier to 1
-		-- Apply any scaling required to our drag behaviour
-		local scales = findAllScaleModifiers(gui)
-		for _, scale in scales do
-			scaleModifier *= scale
-		end
-
-		local draggingGui = (dragGui or gui)
-		startPos = useAbsoluteCoordinates
-				and UDim2.new(0, draggingGui.AbsolutePosition.X, 0, draggingGui.AbsolutePosition.Y)
-			or draggingGui.Position
-
-		startAbsPos = draggingGui.AbsolutePosition
-		guiStartPos = draggingGui.Position
-
-
-
-		if dragPositionMode == "AbsoluteOffset" then
-			local newPosition =
-				UDim2.new(0, startAbsPos.X, 0, startAbsPos.Y)
-			gui.Position = newPosition
-		end
-
-		DragBegan:Fire({
-			AbsolutePosition = (dragGui or gui).AbsolutePosition,
-			InputPosition = dragStart,
-			GuiPosition = startPos,
-		})
-	end
-
 	local function endDragging(endPosition: Vector3)
 		if not dragging then return end
 
 		dragging = false
+		if typeof(self.OnDragEnd) == "function" then
+			self.OnDragEnd()
+		end
 
 		local draggingGui = (dragGui or gui)
 		local endPos = draggingGui.Position
@@ -409,7 +421,12 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
 			and canDrag
 		then
-			startDragging(input.Position)
+			active = true
+			dragStart = input.Position
+
+			if self.requireDragDistance == 0 then
+				startDragging(input.Position)
+			end
 
 			if debug then
 				print("[snapdragon]", "Drag began", input.Position)
@@ -429,29 +446,33 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 
 	maid.guiInputEnded = gui.InputEnded:Connect(function(input)
 		if
-			dragging
+			active
 			and input.UserInputState == Enum.UserInputState.End
 			and (
 				input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.Touch
 			)
 		then
-			local draggingGui = (dragGui or gui)
-			endDragging(input.Position)
+			active = false
 
-			if typeof(self.OnDragEnd) == "function" then
-				self.OnDragEnd()
-			end
+			if dragging then
+				local draggingGui = (dragGui or gui)
+				endDragging(input.Position)
 
-			if debug then
-				print("[snapdragon]", "Drag ended", input.Position)
-			end
+				-- if typeof(self.OnDragEnd) == "function" then
+				-- 	self.OnDragEnd()
+				-- end
 
-			-- Enable the ability to "reset" the position automatically.
-			-- This will be used for stuff like roact-dnd
-			local dragEndedResetsPosition = self.dragEndedResetsPosition
-			if dragEndedResetsPosition then
-				draggingGui.Position = guiStartPos
+				if debug then
+					print("[snapdragon]", "Drag ended", input.Position)
+				end
+
+				-- Enable the ability to "reset" the position automatically.
+				-- This will be used for stuff like roact-dnd
+				local dragEndedResetsPosition = self.dragEndedResetsPosition
+				if dragEndedResetsPosition then
+					draggingGui.Position = guiStartPos
+				end
 			end
 		end
 	end)
@@ -466,7 +487,7 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 	end)
 
 	maid.uisInputChanged = UserInputService.InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
+		if input == dragInput and active then
 			updateDragPosition(input.Position)
 		end
 	end)
