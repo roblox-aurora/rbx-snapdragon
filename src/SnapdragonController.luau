@@ -213,6 +213,17 @@ function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonIn
 		dragDetector.DragSpace = Enum.UIDragDetectorDragSpace.Parent
 	end
 
+	if self.canDrag then
+		-- Add 'canDrag' constraint
+		dragDetector:AddConstraintFunction(100, function(position: UDim2, rotation: number)
+			if not self.canDrag() then
+				return UDim2.new(), 0
+			else
+				return position, rotation
+			end
+		end)
+	end
+
 	-- apply drag position
 	if dragGui ~= gui then
 		warn(`[Snapdragon] UIDragDetector drag handle behaviour ({self.dragPositionMode}) is currently experimental`)
