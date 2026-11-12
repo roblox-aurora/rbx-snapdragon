@@ -61,6 +61,7 @@ end
 export type DragEndCallback = () -> ()
 export type DragPredicate = () -> boolean
 
+export type ControllerType = "Legacy" | "UIDragDetector"
 export type SnapdragonOptions = {
 	DragGui: (GuiObject | SnapdragonRef)?,
 	DragThreshold: number?,
@@ -70,12 +71,17 @@ export type SnapdragonOptions = {
 	SnapAxis: SnapdragonAxis?,
 	DragAxis: SnapdragonAxis?,
 	DragRelativeTo: SnapdragonRelativeTo,
+	--- Enable snapping behaviours
 	SnapEnabled: boolean?,
 	Debugging: boolean?,
 	DragPositionMode: DragPositionMode?,
 	CanDrag: DragPredicate | nil,
+	ControllerType: ControllerType?,
 	DragEndedResetsPosition: boolean?,
 	RequiredDragDistance: number?,
+
+	CursorIcon: (string | Content)?,
+	ActiveCursorIcon: (string | Content)?,
 }
 
 export type DragBeganEvent = {

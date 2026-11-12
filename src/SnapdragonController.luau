@@ -45,8 +45,13 @@ type SnapdragonControllerProps = {
 	snapThresholdHorizontal: Vector2,
 
 	dragScaleModifier: number,
+	
+	controllerType: Types.ControllerType,
 
 	locked: boolean,
+
+	cursorIconContent: Content?,
+	activeCursorIconContent: Content?,
 }
 
 type SnapdragonInternal = setmetatable<SnapdragonControllerProps, typeof(SnapdragonController)>
@@ -67,6 +72,14 @@ local function findAllScaleModifiers(instance: GuiObject | LayerCollector, scale
 	end
 
 	return scales
+end
+
+local function toContent(asset: string | Content): Content
+	if typeof(asset) == "string" then
+		return Content.fromUri(asset)
+	end
+
+	return asset
 end
 
 function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options: Types.SnapdragonOptions): Types.SnapdragonController
@@ -90,6 +103,7 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 		Debugging = false,
 		DragRelativeTo = if pluginAncestor then "Parent" else "LayerCollector",
 		DragPositionMode = "Scale",
+		ControllerType = "Legacy"
 	}, options) :: Types.SnapdragonOptions
 
 	local self = setmetatable({}, SnapdragonController) :: SnapdragonInternal
@@ -116,6 +130,11 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 	self.dragGridSize = options.DragGridSize or 0
 	self.dragPositionMode = options.DragPositionMode
 	self.requireDragDistance = options.RequiredDragDistance or 0
+	self.controllerType = options.ControllerType or "Legacy"
+
+	local defaultCursor = Content.fromUri("rbxasset://textures/Cursors/KeyboardMouse/ArrowCursor.png")
+	self.cursorIconContent = if options.CursorIcon then toContent(options.CursorIcon) else defaultCursor
+	self.activeCursorIconContent = if options.ActiveCursorIcon then toContent(options.ActiveCursorIcon) else defaultCursor
 
 	-- Internal stuff
 	self._useAbsoluteCoordinates = false
@@ -171,7 +190,114 @@ function SnapdragonController.ResetPosition(self: SnapdragonInternal): ()
 	self.dragGui.current.Position = self.originPosition
 end
 
-function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal)
+function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonInternal)
+	const maid = self.maid
+	const dragDetector = Instance.new("UIDragDetector")
+	dragDetector.Name = "SnapdragonController"
+
+	if self.cursorIconContent then
+		dragDetector.CursorIconContent = self.cursorIconContent
+	end
+
+	if self.activeCursorIconContent then
+		dragDetector.ActivatedCursorIconContent = self.activeCursorIconContent
+	end
+
+	const gui = self:GetGui() :: GuiObject
+	const dragGui = self:GetDragGui()
+
+	-- Apply drag space
+	if self.dragRelativeTo == "LayerCollector" then
+		dragDetector.DragSpace = Enum.UIDragDetectorDragSpace.LayerCollector
+	elseif self.dragRelativeTo == "Parent" then
+		dragDetector.DragSpace = Enum.UIDragDetectorDragSpace.Parent
+	end
+
+	-- apply drag position
+	if dragGui ~= gui then
+		warn(`[Snapdragon] UIDragDetector drag handle behaviour ({self.dragPositionMode}) is currently experimental`)
+		if self.dragPositionMode == "Offset" then
+			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.CustomOffset
+			
+			maid.DragUDim2PropertyChangedSignal = dragDetector:GetPropertyChangedSignal("DragUDim2"):Connect(function(...)
+				const dragUDim2 = dragDetector.DragUDim2
+				print(dragUDim2)
+			end)
+		elseif self.dragPositionMode == "Scale" then
+			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.CustomScale
+
+			maid.DragUDim2PropertyChangedSignal = dragDetector:GetPropertyChangedSignal("DragUDim2"):Connect(function(...)
+				const dragUDim2 = dragDetector.DragUDim2
+				print(dragUDim2)
+			end)
+		else
+			warn("unsupported drag response style", self.dragPositionMode)
+		end
+	else
+		if self.dragPositionMode == "Offset" then
+			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.Offset
+		elseif self.dragPositionMode == "Scale" then
+			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.Scale
+		else
+			warn("unsupported drag response style", self.dragPositionMode)
+		end
+	end
+
+	-- apply dragAxis
+	if self.dragAxis == "X" then
+		dragDetector.DragStyle = Enum.UIDragDetectorDragStyle.TranslateLine
+		dragDetector.DragAxis = Vector2.new(1, 0)
+	elseif self.dragAxis == "Y" then
+		dragDetector.DragStyle = Enum.UIDragDetectorDragStyle.TranslateLine
+		dragDetector.DragAxis = Vector2.new(0, 1)
+	else
+		dragDetector.DragStyle = Enum.UIDragDetectorDragStyle.TranslatePlane
+	end
+
+	-- Set snapping constraints
+	if self.snapEnabled then
+		-- RelativeTo constraints
+		if self.dragRelativeTo == "LayerCollector" then
+			local layerCollector = gui:FindFirstAncestorWhichIsA("LayerCollector")
+			if layerCollector then
+				dragDetector.BoundingUI = layerCollector
+			end
+		elseif self.dragRelativeTo == "Parent" and gui.Parent and gui.Parent:IsA("GuiBase2d") then
+			dragDetector.BoundingUI = gui.Parent
+		end
+
+
+	end
+	dragDetector.Parent = gui
+
+	maid.dragBeganEvent = dragDetector.DragStart:Connect(function(inputPosition: Vector2)
+		self.DragBegan:Fire({
+			AbsolutePosition = dragGui.AbsolutePosition,
+			InputPosition = Vector3.new(inputPosition.X, inputPosition.Y, 0),
+			GuiPosition = dragGui.Position,
+		})
+	end)
+
+	maid.dragChangedEvent = dragDetector.DragContinue:Connect(function(inputPosition: Vector2)
+		self.DragChanged:Fire({
+			GuiPosition = dragGui.Position,
+			DragPositionMode = self.dragPositionMode,
+			SnapAxis = self.snapAxis
+		})	
+	end)
+
+	maid.dragEndedEvent = dragDetector.DragEnd:Connect(function(inputPosition: Vector2)
+		self.DragEnded:Fire({
+			AbsolutePosition = dragGui.AbsolutePosition,
+			InputPosition = Vector3.new(inputPosition.X, inputPosition.Y, 0),
+			GuiPosition = dragGui.Position,
+			DraggedGui = dragGui
+		})
+	end)
+	maid.dragDetector = function() dragDetector:Destroy() end
+end
+
+function SnapdragonController.__bindLegacyControllerBehaviour(self: SnapdragonInternal)
 	local maid = self.maid
 	local debug = self.debug
 
@@ -186,9 +312,6 @@ function SnapdragonController.__bindControllerBehaviour(self: SnapdragonInternal
 	local dragRelativeTo = self.dragRelativeTo
 	local dragGridSize = self.dragGridSize
 	local dragPositionMode = self.dragPositionMode
-
-	local useAbsoluteCoordinates = self._useAbsoluteCoordinates
-
 	local reachedExtents
 
 	local active: boolean
@@ -498,11 +621,23 @@ function SnapdragonController.Connect(self: SnapdragonInternal): SnapdragonInter
 		error("[SnapdragonController] Cannot connect locked controller!", 2)
 	end
 
+	local baseGui = self:GetGui()
 	local ref = self:GetDragGui()
 
 	if not controllers[ref] or controllers[ref] == self then
 		controllers[ref] = self
-		self:__bindControllerBehaviour()
+
+
+		if self.controllerType == "Legacy"  then
+			self:__bindLegacyControllerBehaviour()
+		else
+			-- if baseGui ~= ref then
+			-- 	warn(`[Snapdragon] Using legacy controller on {ref:GetFullName()} because dragGui != refGui, handle dragging isn't supported by Roblox yet.`)
+			-- 	self:__bindLegacyControllerBehaviour()
+			-- else
+			self:__bindRobloxControllerBehaviour()
+			-- end
+		end
 	else
 		error("[SnapdragonController] This object is already bound to a controller")
 	end

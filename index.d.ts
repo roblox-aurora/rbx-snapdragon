@@ -106,7 +106,22 @@ declare interface DraggingSnapOptions {
 	SnapAxis?: AxisConstraint;
 }
 
-declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {}
+declare const enum SnapdragonControllerType {
+	Legacy = "Legacy",
+	UIDragDetector = "UIDragDetector",
+}
+
+declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {
+	/**
+	 * The type of controller to use, currenly defaults to {@link SnapdragonControllerType.Legacy} but will be migrated to {@link SnapdragonControllerType.UIDragDetector} in future.
+	 */
+	ControllerType?: SnapdragonControllerType,
+
+	/** Cursor to use on the draggable object (only works with {@link SnapdragonControllerType.UIDragDetector}) */
+	CursorIcon?: Content | string,
+	/** Cursor to use on the draggable object when activated (only works with {@link SnapdragonControllerType.UIDragDetector}) */
+	ActiveCursorIcon?: Content | string,
+}
 
 declare interface Signal<ConnectedFunctionSignature = () => void, Generic = false> {
 	/**

@@ -9,7 +9,7 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@rbxts/compiler-types": "^1.0.0-beta.11.1",
-		"@rbxts/types": "^1.0.431",
+		"@rbxts/types": "^1.0.962",
 		"roblox-ts": "^3.0.0"
 	},
 	"publishConfig": {
