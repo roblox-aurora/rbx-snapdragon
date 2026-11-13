@@ -50,16 +50,17 @@ declare interface DraggingOptions {
 	DragGui?: GuiObject | RefLike;
 
 	/**
-	 * The amount of pixels the mouse must be held down before the dragging happens
+	 * The distance required for the drag behaviour to start applying to the GUI itself
 	 *
 	 * Note: The bigger the threshold, the more "snappy" the initial drag may feel.
-	 *
-	 * @todo
+	 * @default 0
 	 */
 	DragThreshold?: number;
 
 	/**
-	 * @todo
+	 * The Axis this controller can drag along
+	 * 
+	 * @default AxisConstraint.XY
 	 */
 	DragAxis?: AxisConstraint;
 
@@ -69,17 +70,19 @@ declare interface DraggingOptions {
 	DragRelativeTo?: DragRelativeTo;
 
 	/**
-	 * @todo
+	 * @default 0
 	 */
 	DragGridSize?: number;
 
 	/**
-	 * @todo
+	 * Whether or not the drag position should be based on Offset or Scale
+	 * @default DragPositionMode.Scale
 	 */
 	DragPositionMode?: DragPositionMode;
 
 	/**
-	 * The position is reset on drag end
+	 * The position is reset to the original position on drag end
+	 * @default false
 	 */
 	DragEndedResetsPosition?: boolean;
 
@@ -87,16 +90,12 @@ declare interface DraggingOptions {
 	 * Callback to whether or not to allow this component to drag
 	 */
 	CanDrag?: () => boolean;
-
-	/**
-	 * The distance required for the drag to start working
-	 */
-	RequiredDragDistance?: number;
 }
 
 declare interface DraggingSnapOptions {
 	/**
 	 * The margin to the edges of the parent container
+	 * @deprecated
 	 */
 	SnapMargin?: SnapMargin;
 
@@ -106,18 +105,19 @@ declare interface DraggingSnapOptions {
 	 * It's additive to the snapMargin, so a margin of 20 + a snap threshold of 20 = total snapThreshold of 40.
 	 *
 	 * That means if the dragged object comes within 40 pixels, it will snap to the edge.
+	 * @deprecated
 	 */
 	SnapThreshold?: SnapMargin;
 
 	/**
 	 * Whether or not the snapping behaviour is enabled
 	 *
-	 * (true by default)
+	 * @default true
 	 */
 	SnapEnabled?: boolean;
 
 	/**
-	 * @todo
+	 * @deprecated Use {@link DraggingOptions.DragAxis}
 	 */
 	SnapAxis?: AxisConstraint;
 }
@@ -131,7 +131,12 @@ declare type ContentOrUri = string | Content;
 
 declare interface SnapdragonOptions extends DraggingSnapOptions, DraggingOptions {
 	/**
-	 * The type of controller to use, currenly defaults to {@link SnapdragonControllerType.Legacy} but will be migrated to {@link SnapdragonControllerType.UIDragDetector} in future.
+	 * The type of controller to use.
+	 * 
+	 * - **UIDragDetector** - uses Roblox's `UIDragDetector` instance.
+	 * - **Legacy** - uses the old Snapdragon behaviour. (This is considered deprecated)
+	 * 
+	 * @default SnapdragonControllerType.Legacy
 	 */
 	ControllerType?: SnapdragonControllerType,
 

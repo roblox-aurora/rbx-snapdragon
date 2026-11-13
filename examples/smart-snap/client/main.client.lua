@@ -1,6 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Snapdragon = require(ReplicatedStorage:WaitForChild("Snapdragon"))
 
+const defaults = Snapdragon.config()
+defaults.ControllerType = "UIDragDetector"
+defaults.SnapEnabled = true
 
 -- Basic Example
 do
@@ -13,22 +16,11 @@ do
 	windowFrame.Parent = screenGui
 	screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
+	local config = table.clone(defaults)
+
 	-- attach dragger to window
-	local controller = Snapdragon.createDragController(windowFrame, {
-		SnapEnabled = true,
-		--ControllerType = "UIDragDetector",
-		-- DragAxis = "X",
-	});
-
+	local controller = Snapdragon.createDragController(windowFrame, config);
 	controller:Connect()
-
-	controller.DragBegan:Connect(function(event)
-		print("Drag began", event.InputPosition, event.GuiPosition, event.AbsolutePosition)
-	end)
-
-	controller.DragEnded:Connect(function(event) 
-		print("Drag ended", event.DraggedGui, event.GuiPosition, event.InputPosition, event.ReachedExtents)
-	end)
 end
 
 -- Basic Example w/ AnchorPoint
@@ -44,11 +36,10 @@ do
 	windowFrame.Parent = screenGui
 	screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
+	local config = table.clone(defaults)
+
 	-- attach dragger to window
-	local controller = Snapdragon.createDragController(windowFrame, {
-		SnapEnabled = true,
-		--ControllerType = "UIDragDetector"
-	});
+	local controller = Snapdragon.createDragController(windowFrame, config);
 	controller.DragEnded:Connect(function(_, ext)
 		print("ext", tick(),  ext.X, ext.Y)
 	end)
@@ -74,13 +65,12 @@ do
 
 	screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
+	local config = table.clone(defaults)
+	config.DragEndedResetsPosition = false
+	config.DragGui = windowFrame 
+	config.DragPositionMode = "Offset"
+
 	-- attach dragger to a titlebar, but treat it like it's dragging the window
-	local controller = Snapdragon.createDragController(windowTitle, {
-		DragGui = windowFrame, -- Tells this controller that it's dragging the window, not the titlebar
-		SnapEnabled = true,
-		--ControllerType = "UIDragDetector",
-		DragPositionMode = "Offset",
-		RequiredDragDistance = 50
-	});
+	local controller = Snapdragon.createDragController(windowTitle, config);
 	controller:Connect()
 end

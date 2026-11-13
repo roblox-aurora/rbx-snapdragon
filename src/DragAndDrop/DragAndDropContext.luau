@@ -58,7 +58,7 @@ function SnapdragAndDropContext.RegisterDragSource(self: SnapdragAndDropContext,
         CanDrag = options.CanDragSource,
         DragPositionMode = if raiseAbove then "AbsoluteOffset" else "Offset",
         SnapEnabled = false,
-        RequiredDragDistance = 50,
+        DragThreshold = 50,
         Debugging = true,
         ControllerType = if raiseAbove then "Legacy" else "UIDragDetector"
     }, options.ControllerOptions)

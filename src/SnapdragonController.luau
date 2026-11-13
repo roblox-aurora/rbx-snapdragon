@@ -2,11 +2,11 @@
 local UserInputService = game:GetService("UserInputService")
 const Workspace = game:GetService("Workspace")
 
-local objectAssign = require(script.Parent.objectAssign)
-local Signal = require(script.Parent.Signal)
-local SnapdragonRef = require(script.Parent.SnapdragonRef)
-local t = require(script.Parent.t)
-local Maid = require(script.Parent.Maid)
+local objectAssign = require("./objectAssign")
+local Signal = require("./Signal")
+local SnapdragonRef = require("./SnapdragonRef")
+local t = require("./t")
+local Maid = require("./Maid")
 local Types = require("./Types")
 
 local SnapdragonController = {}
@@ -104,7 +104,7 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 		Debugging = false,
 		DragRelativeTo = if pluginAncestor then "Parent" else "LayerCollector",
 		DragPositionMode = "Scale",
-		ControllerType = "UIDragDetector"
+		ControllerType = "Legacy"
 	}, options) :: Types.SnapdragonOptions
 
 	local self = setmetatable({}, SnapdragonController) :: SnapdragonInternal
@@ -130,8 +130,10 @@ function SnapdragonController.new(gui: GuiObject | Types.SnapdragonRef, options:
 	self.dragRelativeTo = options.DragRelativeTo
 	self.dragGridSize = options.DragGridSize or 0
 	self.dragPositionMode = options.DragPositionMode
-	self.requireDragDistance = options.RequiredDragDistance or 0
-	self.controllerType = options.ControllerType or "Legacy"
+	self.requireDragDistance = options.DragThreshold or 0
+
+	assert(options.ControllerType) -- this is already set, just stfu luau
+	self.controllerType = options.ControllerType
 
 	-- Keep the legacy cursor behaviour for now :?
 	local defaultCursor = if self:GetGui():IsA("GuiButton") then Content.fromUri("rbxasset://textures/Cursors/KeyboardMouse/ArrowCursor.png") else Content.fromUri("rbxasset://textures/Cursors/KeyboardMouse/ArrowFarCursor.png")
@@ -202,6 +204,14 @@ local function getViewportSize(gui: GuiObject)
 	end
 end
 
+const ConstraintPriority = {
+	CanDrag = 100,
+	RequireDragDistance = 99,
+	SnapAxis = 98,
+	SnapMargin = 97,
+	SnapThreshold = 96,
+}
+
 function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonInternal)
 	const maid = self.maid
 	const dragDetector = Instance.new("UIDragDetector")
@@ -215,19 +225,22 @@ function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonIn
 		dragDetector.ActivatedCursorIconContent = self.activeCursorIconContent
 	end
 
-	const gui = self:GetGui() :: GuiObject
-	const dragGui = self:GetDragGui()
+	const draggableGui: GuiObject = self:GetGui() :: GuiObject
+	const dragContainerGui: GuiObject = self:GetDragGui()
+	const relativeTo = self.dragRelativeTo
+	const layerCollector = draggableGui:FindFirstAncestorWhichIsA("LayerCollector")
 
 	-- Apply drag space
-	if self.dragRelativeTo == "LayerCollector" then
+	if relativeTo == "LayerCollector" then
 		dragDetector.DragSpace = Enum.UIDragDetectorDragSpace.LayerCollector
-	elseif self.dragRelativeTo == "Parent" then
+		assert(layerCollector)
+	elseif relativeTo == "Parent" then
 		dragDetector.DragSpace = Enum.UIDragDetectorDragSpace.Parent
 	end
 
 	if self.canDrag then
 		-- Add 'canDrag' constraint
-		dragDetector:AddConstraintFunction(100, function(position: UDim2, rotation: number)
+		dragDetector:AddConstraintFunction(ConstraintPriority.CanDrag, function(position: UDim2, rotation: number)
 			if not self.canDrag() then
 				return UDim2.new(), 0
 			else
@@ -241,10 +254,10 @@ function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonIn
 			local startGuiPos: UDim2
 
 			maid._ = dragDetector.DragStart:Connect(function(inputPosition: Vector2)
-				startGuiPos = dragGui.Position
+				startGuiPos = dragContainerGui.Position
 			end)
 
-			dragDetector:AddConstraintFunction(100, function(position: UDim2)
+			dragDetector:AddConstraintFunction(ConstraintPriority.RequireDragDistance, function(position: UDim2)
 				local delta = position - startGuiPos
 				local deltaVec = Vector2.new(
 					delta.X.Offset,
@@ -261,7 +274,7 @@ function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonIn
 	end
 
 	-- apply drag position
-	if dragGui ~= gui then
+	if dragContainerGui ~= draggableGui then
 		if self.dragPositionMode == "Offset" or self.dragPositionMode == "AbsoluteOffset" then
 			if self.dragPositionMode == "AbsoluteOffset" then
 				warn(`[Snapdragon] AbsoluteOffset is not supported for {self.controllerType}`)
@@ -272,21 +285,56 @@ function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonIn
 
 			local dragging = false
 			maid.HandleDragStartEvent = dragDetector.DragStart:Connect(function(inputPosition: Vector2)
-				startPos = dragGui.Position
+				startPos = dragContainerGui.Position
 				dragging = true
 			end)
 
 			maid.HandleDragUDim2Change = dragDetector:GetPropertyChangedSignal("DragUDim2"):Connect(function()
 				if not dragging then return end
-				dragGui.Position = startPos + dragDetector.DragUDim2
+				dragContainerGui.Position = startPos + dragDetector.DragUDim2
 			end)
 
-			maid.HanldeDragEndedEvent = dragDetector.DragEnd:Connect(function(inputPosition: Vector2)
+			maid.HandleDragEndedEvent = dragDetector.DragEnd:Connect(function(inputPosition: Vector2)
 				dragging = false
 			end)
 		elseif self.dragPositionMode == "Scale" then
-			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.Scale
-			warn(`[Snapdragon] UIDragDetector drag handle behaviour ({self.dragPositionMode}) is currently not supported`)
+			local isChildHandle = false
+			if draggableGui:IsDescendantOf(dragContainerGui) then
+				isChildHandle = true
+			end
+
+			dragDetector.ResponseStyle = Enum.UIDragDetectorResponseStyle.CustomScale
+
+			local dragging = false
+			local startPos: UDim2
+
+			maid.HandleDragStartEvent = dragDetector.DragStart:Connect(function(inputPosition: Vector2)
+				startPos = dragContainerGui.Position
+				dragging = true
+			end)
+
+			maid.HandleDragUDim2Change = dragDetector:GetPropertyChangedSignal("DragUDim2"):Connect(function()
+				if not dragging then return end
+ 
+				if isChildHandle then
+					-- need to perform child-to-parent-space
+					const parentSpaceDrag = dragDetector.DragUDim2
+					local transformedSpaceDrag
+					if relativeTo == "LayerCollector" and layerCollector then
+						const absoluteSize = layerCollector.AbsoluteSize
+						const containerSize = dragContainerGui.AbsoluteSize
+						const relSize = containerSize / absoluteSize
+						transformedSpaceDrag = UDim2.fromScale(parentSpaceDrag.X.Scale * relSize.X, parentSpaceDrag.Y.Scale * relSize.Y)
+						dragContainerGui.Position = startPos + transformedSpaceDrag
+					elseif relativeTo == "Parent" then
+						warn(`[Snapdragon] Parent-space drag for handles using {self.controllerType} aren't yet supported`)
+					end
+				end
+			end)
+
+			maid.HandleDragEndedEvent = dragDetector.DragEnd:Connect(function(inputPosition: Vector2)
+				dragging = false
+			end)
 		end
 	else
 		if self.dragPositionMode == "Offset" or self.dragPositionMode == "AbsoluteOffset" then
@@ -313,31 +361,33 @@ function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonIn
 
 	-- Set snapping constraints
 	if self.snapEnabled then
-		-- RelativeTo constraints
-		if self.dragRelativeTo == "LayerCollector" then
-			local layerCollector = gui:FindFirstAncestorWhichIsA("LayerCollector")
-			if layerCollector then
+		if self.snapAxis == "XY" then
+			-- RelativeTo constraints
+			if self.dragRelativeTo == "LayerCollector" and layerCollector then
 				dragDetector.BoundingUI = layerCollector
+			elseif self.dragRelativeTo == "Parent" and draggableGui.Parent and draggableGui.Parent:IsA("GuiBase2d") then
+				dragDetector.BoundingUI = draggableGui.Parent
 			end
-		elseif self.dragRelativeTo == "Parent" and gui.Parent and gui.Parent:IsA("GuiBase2d") then
-			dragDetector.BoundingUI = gui.Parent
+		else
+			warn(`[Snapdragon] {self.controllerType} does not yet support SnapAxis({self.snapAxis}) - this feature is considered deprecated - you should use DragAxis`)
 		end
-
-
 	end
-	dragDetector.Parent = gui
+	dragDetector.Parent = draggableGui
 
+	local startPos: UDim2
 	maid.dragBeganEvent = dragDetector.DragStart:Connect(function(inputPosition: Vector2)
+		startPos = dragContainerGui.Position
+
 		self.DragBegan:Fire({
-			AbsolutePosition = dragGui.AbsolutePosition,
+			AbsolutePosition = dragContainerGui.AbsolutePosition,
 			InputPosition = Vector3.new(inputPosition.X, inputPosition.Y, 0),
-			GuiPosition = dragGui.Position,
+			GuiPosition = dragContainerGui.Position,
 		})
 	end)
 
 	maid.dragChangedEvent = dragDetector.DragContinue:Connect(function(inputPosition: Vector2)
 		self.DragChanged:Fire({
-			GuiPosition = dragGui.Position,
+			GuiPosition = dragContainerGui.Position,
 			DragPositionMode = self.dragPositionMode,
 			SnapAxis = self.snapAxis
 		})	
@@ -345,11 +395,15 @@ function SnapdragonController.__bindRobloxControllerBehaviour(self: SnapdragonIn
 
 	maid.dragEndedEvent = dragDetector.DragEnd:Connect(function(inputPosition: Vector2)
 		self.DragEnded:Fire({
-			AbsolutePosition = dragGui.AbsolutePosition,
+			AbsolutePosition = dragContainerGui.AbsolutePosition,
 			InputPosition = Vector3.new(inputPosition.X, inputPosition.Y, 0),
-			GuiPosition = dragGui.Position,
-			DraggedGui = dragGui
+			GuiPosition = dragContainerGui.Position,
+			DraggedGui = dragContainerGui
 		})
+
+		if self.dragEndedResetsPosition then
+			dragContainerGui.Position = startPos
+		end
 	end)
 	maid.dragDetector = function() dragDetector:Destroy() end
 end

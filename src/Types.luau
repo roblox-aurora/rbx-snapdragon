@@ -78,7 +78,6 @@ export type SnapdragonOptions = {
 	CanDrag: DragPredicate | nil,
 	ControllerType: ControllerType?,
 	DragEndedResetsPosition: boolean?,
-	RequiredDragDistance: number?,
 
 	CursorIcon: (string | Content)?,
 	ActiveCursorIcon: (string | Content)?,

@@ -16,11 +16,20 @@ local function createRef(gui)
 	return SnapdragonRef.new(gui)
 end
 
+local function makeConfig(): Types.Partial<Types.SnapdragonOptions>
+	return {}
+end
+
 type Snapdragon = {
+	--- Create a drag controller on the target gui with the given options
 	createDragController: (gui: GuiObject, options: Types.SnapdragonOptions) -> Types.SnapdragonController,
 	SnapdragonController: Types.SnapdragonControllerType,
 	createRef: (initialValue: GuiObject) -> Types.SnapdragonRef,
+	--- Create a drag & drop context to create drag and drop objects
 	createDragAndDropContext: () -> DragAndDrop.SnapdragAndDropContext,
+
+	--- Creates an object with the config type, may be easier than directly passing properties
+	config: () -> Types.SnapdragonOptions
 }
 
 local Snapdragon = {
@@ -28,6 +37,7 @@ local Snapdragon = {
 	createDragAndDropContext = createDragAndDropContext,
 	SnapdragonController = SnapdragonController :: Types.SnapdragonControllerType,
 	createRef = createRef,
+	config = makeConfig,
 }
 
 -- roblox-ts `default` support
